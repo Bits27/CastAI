@@ -1,0 +1,152 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { requireAuth } from './_lib/auth'
+import { db, schema, neonSql } from './_lib/db'
+import { eq } from 'drizzle-orm'
+import { GoogleGenerativeAI } from '@google/generative-ai'
+
+const genai = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
+
+interface ChunkResult {
+  id: string
+  video_id: string
+  content: string
+  start_time_seconds: number
+  end_time_seconds: number
+  similarity: number
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  let userId: string
+  try {
+    userId = await requireAuth(req)
+  } catch {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  const { query, videoIds = [], collectionId } = req.body as {
+    query: string
+    videoIds: string[]
+    collectionId?: string
+  }
+
+  if (!query) return res.status(400).json({ error: 'query is required' })
+
+  // Resolve collection -> video IDs
+  let resolvedVideoIds = [...videoIds]
+  if (collectionId) {
+    const collVideos = await db
+      .select({ id: schema.videos.id })
+      .from(schema.videos)
+      .where(eq(schema.videos.collectionId, collectionId))
+    resolvedVideoIds = [...new Set([...resolvedVideoIds, ...collVideos.map((v) => v.id)])]
+  }
+
+  if (resolvedVideoIds.length === 0) {
+    // Use all user videos
+    const allVideos = await db
+      .select({ id: schema.videos.id })
+      .from(schema.videos)
+      .where(eq(schema.videos.userId, userId))
+    resolvedVideoIds = allVideos.map((v) => v.id)
+  }
+
+  if (resolvedVideoIds.length === 0) {
+    return res.status(400).json({ error: 'No videos to search' })
+  }
+
+  // Embed query
+  const embModel = genai.getGenerativeModel({ model: 'text-embedding-004' })
+  const embRes = await embModel.embedContent(query)
+  const queryEmbedding = embRes.embedding.values
+
+  // Vector search
+  const chunks = await neonSql`
+    SELECT * FROM match_chunks(
+      ${JSON.stringify(queryEmbedding)}::vector,
+      5,
+      ${resolvedVideoIds}::uuid[]
+    )
+  ` as ChunkResult[]
+
+  // Fetch video titles for context
+  const videoTitleMap: Record<string, string> = {}
+  for (const chunk of chunks) {
+    if (!videoTitleMap[chunk.video_id]) {
+      const [video] = await db
+        .select({ title: schema.videos.title })
+        .from(schema.videos)
+        .where(eq(schema.videos.id, chunk.video_id))
+      videoTitleMap[chunk.video_id] = video?.title ?? 'Unknown Video'
+    }
+  }
+
+  // Build context blocks
+  const contextBlocks = chunks.map((chunk, i) => {
+    const title = videoTitleMap[chunk.video_id]
+    const ts = Math.round(chunk.start_time_seconds)
+    return `[${i + 1}] From "${title}" at ${ts}s:\n${chunk.content}`
+  }).join('\n\n')
+
+  const systemPrompt = `You are CastAI, an AI assistant that helps users understand their video library.
+Answer questions using ONLY the provided context. Be concise and insightful.
+After each relevant sentence, include a citation in this exact format: [SOURCE:chunkId:videoTitle:startSeconds]
+Replace chunkId, videoTitle, and startSeconds with the actual values from the context.
+If the context doesn't contain enough information, say so clearly.`
+
+  const userPrompt = `Context from videos:\n\n${contextBlocks}\n\nQuestion: ${query}`
+
+  // Stream response
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
+
+  try {
+    const chatModel = genai.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      systemInstruction: systemPrompt,
+    })
+    const result = await chatModel.generateContentStream(userPrompt)
+
+    // Buffer to handle SOURCE citations that may span multiple chunks
+    let buffer = ''
+    for await (const chunk of result.stream) {
+      buffer += chunk.text()
+
+      let processed = ''
+      let remaining = buffer
+      while (true) {
+        const sourceIdx = remaining.indexOf('[SOURCE:')
+        if (sourceIdx === -1) {
+          processed += remaining
+          remaining = ''
+          break
+        }
+        processed += remaining.slice(0, sourceIdx)
+        remaining = remaining.slice(sourceIdx)
+        const closeIdx = remaining.indexOf(']')
+        if (closeIdx === -1) break // incomplete citation — keep in buffer
+        const pattern = remaining.slice(0, closeIdx + 1)
+        processed += pattern.replace(
+          /\[SOURCE:(\d+):([^:]+):(\d+)\]/g,
+          (_, idx, title, ts) => {
+            const c = chunks[parseInt(idx) - 1]
+            return c ? `[SOURCE:${c.id}:${title}:${ts}]` : ''
+          }
+        )
+        remaining = remaining.slice(closeIdx + 1)
+      }
+      buffer = remaining
+      if (processed) res.write(`data: ${processed}\n\n`)
+    }
+
+    if (buffer) res.write(`data: ${buffer}\n\n`)
+    res.write('data: [DONE]\n\n')
+    res.end()
+  } catch (err) {
+    console.error('Chat stream error:', err)
+    res.write('data: [ERROR]\n\n')
+    res.end()
+  }
+}
