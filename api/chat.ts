@@ -132,7 +132,7 @@ If the context doesn't contain enough information, say so clearly.`
           /\[SOURCE:(\d+):([^:]+):(\d+)\]/g,
           (_, idx, title, ts) => {
             const c = chunks[parseInt(idx) - 1]
-            return c ? `[SOURCE:${c.id}:${title}:${ts}]` : ''
+            return c ? `[SOURCE:${c.id}:${c.video_id}:${title}:${ts}]` : ''
           }
         )
         remaining = remaining.slice(closeIdx + 1)

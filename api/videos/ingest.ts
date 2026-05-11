@@ -138,22 +138,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       transcriptEntries = await YoutubeTranscript.fetchTranscript(youtubeId)
     } catch (err) {
-      console.error('youtube-transcript failed, trying AssemblyAI fallback:', err)
-      // AssemblyAI fallback
-      if (process.env.ASSEMBLYAI_API_KEY) {
-        const { AssemblyAI } = await import('assemblyai')
-        const aai = new AssemblyAI({ apiKey: process.env.ASSEMBLYAI_API_KEY })
-        const transcript = await aai.transcripts.transcribe({
-          audio_url: `https://www.youtube.com/watch?v=${youtubeId}`,
-        })
-        if (transcript.words) {
-          transcriptEntries = transcript.words.map((w) => ({
-            text: w.text ?? '',
-            offset: w.start ?? 0,
-            duration: (w.end ?? 0) - (w.start ?? 0),
-          }))
-        }
-      }
+      console.error('youtube-transcript failed:', err)
     }
 
     if (transcriptEntries.length === 0) {
@@ -246,7 +231,16 @@ Return only valid JSON, no markdown.`
     }
 
     const [done] = await db.select().from(schema.videos).where(eq(schema.videos.id, video.id))
-    return res.status(200).json({ ...done, insights })
+    return res.status(200).json({
+      ...done,
+      insights: {
+        summary: insights.summary,
+        speakers: insights.speakers,
+        keyClaims: insights.key_claims,
+        topQuotes: insights.top_quotes,
+        topics: insights.topics,
+      },
+    })
   } catch (err) {
     console.error('Ingest error:', err)
     await db.update(schema.videos).set({ status: 'failed' }).where(eq(schema.videos.id, video.id))

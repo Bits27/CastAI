@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { requireAuth } from '../_lib/auth'
 import { db, schema } from '../_lib/db'
-import { eq } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
@@ -17,7 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .select()
     .from(schema.videos)
     .where(eq(schema.videos.userId, userId))
-    .orderBy(schema.videos.createdAt)
+    .orderBy(desc(schema.videos.createdAt))
 
   // Attach insights
   const withInsights = await Promise.all(

@@ -11,7 +11,7 @@ function CitationChip({ citation }: { citation: Citation }) {
   const videos = useAppSelector((s) => s.videos.videos)
 
   function handleClick() {
-    const matched = videos.find((v) => v.title === citation.videoTitle)
+    const matched = videos.find((v) => v.id === citation.videoId)
     if (matched) {
       dispatch(setActiveVideo(matched.youtubeId))
     }

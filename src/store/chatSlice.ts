@@ -8,6 +8,7 @@ export interface Citation {
   startSeconds: number
 }
 
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -27,7 +28,7 @@ const initialState: ChatState = {
   error: null,
 }
 
-const CITATION_RE = /\[SOURCE:([^:]+):([^:]+):([^\]]+)\]/g
+const CITATION_RE = /\[SOURCE:([^:]+):([^:]+):([^:]+):([^\]]+)\]/g
 
 function stripCitations(text: string): string {
   return text.replace(CITATION_RE, '').replace(/\s{2,}/g, ' ').trim()
@@ -36,13 +37,13 @@ function stripCitations(text: string): string {
 function extractCitations(text: string): Citation[] {
   const citations: Citation[] = []
   let match: RegExpExecArray | null
-  const re = /\[SOURCE:([^:]+):([^:]+):([^\]]+)\]/g
+  const re = /\[SOURCE:([^:]+):([^:]+):([^:]+):([^\]]+)\]/g
   while ((match = re.exec(text)) !== null) {
     citations.push({
       chunkId: match[1],
-      videoTitle: match[2],
-      startSeconds: parseFloat(match[3]),
-      videoId: '', // resolved later via chunkId lookup
+      videoId: match[2],
+      videoTitle: match[3],
+      startSeconds: parseFloat(match[4]),
     })
   }
   return citations
