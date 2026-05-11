@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { Webhook } from 'svix'
-import { db, schema } from '../_lib/db'
+import { db, schema } from '../_lib/db.js'
 
 export const config = { api: { bodyParser: false } }
 

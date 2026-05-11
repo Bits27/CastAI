@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { requireAuth } from '../_lib/auth'
-import { db, schema } from '../_lib/db'
+import { requireAuth } from '../_lib/auth.js'
+import { db, schema } from '../_lib/db.js'
 import { eq, and } from 'drizzle-orm'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

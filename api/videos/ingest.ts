@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { requireAuth } from '../_lib/auth'
-import { db, schema, neonSql } from '../_lib/db'
+import { requireAuth } from '../_lib/auth.js'
+import { db, schema, neonSql } from '../_lib/db.js'
 import { eq } from 'drizzle-orm'
 import { YoutubeTranscript } from 'youtube-transcript'
 import { google } from 'googleapis'
