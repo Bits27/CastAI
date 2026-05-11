@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAppSelector, useAppDispatch } from '../../store/hooks'
 import { setActiveVideo } from '../../store/playerSlice'
@@ -13,6 +14,10 @@ export default function VideoDetail() {
   const { id } = useParams<{ id: string }>()
   const dispatch = useAppDispatch()
   const video = useAppSelector((s) => s.videos.videos.find((v) => v.id === id))
+
+  useEffect(() => {
+    if (video) dispatch(setActiveVideo(video.youtubeId))
+  }, [video?.youtubeId])
 
   if (!video) {
     return (

@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { Webhook } from 'svix'
 import { db, schema } from '../_lib/db'
 
+export const config = { api: { bodyParser: false } }
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -16,12 +18,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing svix headers' })
   }
 
-  let payload: string
-  if (typeof req.body === 'string') {
-    payload = req.body
-  } else {
-    payload = JSON.stringify(req.body)
-  }
+  const chunks: Buffer[] = []
+  for await (const chunk of req) chunks.push(chunk as Buffer)
+  const payload = Buffer.concat(chunks).toString('utf-8')
 
   const wh = new Webhook(webhookSecret)
   let event: { type: string; data: { id: string; email_addresses: { email_address: string }[] } }
