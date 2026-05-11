@@ -2,10 +2,58 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { requireAuth } from '../_lib/auth.js'
 import { db, schema, neonSql } from '../_lib/db.js'
 import { eq } from 'drizzle-orm'
-import { YoutubeTranscript } from 'youtube-transcript'
 import { google } from 'googleapis'
 import { Resend } from 'resend'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+}
+
+function extractJsonFromPage(html: string, marker: string): any {
+  const idx = html.indexOf(marker)
+  if (idx === -1) return null
+  const start = html.indexOf('{', idx)
+  if (start === -1) return null
+  let depth = 0
+  for (let i = start; i < html.length; i++) {
+    if (html[i] === '{') depth++
+    else if (html[i] === '}' && --depth === 0) {
+      try { return JSON.parse(html.slice(start, i + 1)) } catch { return null }
+    }
+  }
+  return null
+}
+
+async function fetchYouTubeTranscript(videoId: string): Promise<{ text: string; offset: number; duration: number }[]> {
+  const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, { headers: BROWSER_HEADERS })
+  if (!pageRes.ok) throw new Error(`YouTube page fetch failed: ${pageRes.status}`)
+  const html = await pageRes.text()
+
+  const playerData = extractJsonFromPage(html, 'ytInitialPlayerResponse')
+  const tracks = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks
+  if (!tracks?.length) throw new Error('No caption tracks found on this video')
+
+  const track = tracks.find((t: any) => t.languageCode?.startsWith('en')) ?? tracks[0]
+  const captionUrl = `${track.baseUrl}&fmt=json3`
+
+  const captionRes = await fetch(captionUrl, { headers: BROWSER_HEADERS })
+  if (!captionRes.ok) throw new Error(`Caption fetch failed: ${captionRes.status}`)
+  const captionData = await captionRes.json() as {
+    events?: { tStartMs?: number; dDurationMs?: number; segs?: { utf8?: string }[] }[]
+  }
+
+  return (captionData.events ?? [])
+    .filter(e => e.segs)
+    .map(e => ({
+      text: e.segs!.map(s => s.utf8 ?? '').join('').trim(),
+      offset: e.tStartMs ?? 0,
+      duration: e.dDurationMs ?? 0,
+    }))
+    .filter(e => e.text)
+}
 
 const genai = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -136,9 +184,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Fetch transcript
     let transcriptEntries: { text: string; offset: number; duration: number }[] = []
     try {
-      transcriptEntries = await YoutubeTranscript.fetchTranscript(youtubeId)
+      transcriptEntries = await fetchYouTubeTranscript(youtubeId)
     } catch (err) {
-      console.error('youtube-transcript failed:', err)
+      console.error('Transcript fetch failed:', err)
     }
 
     if (transcriptEntries.length === 0) {
