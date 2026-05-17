@@ -37,6 +37,9 @@ export default function YouTubePlayer() {
   const { activeVideoId, seekTarget } = useAppSelector((s) => s.player)
   const playerRef = useRef<YTPlayer | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const activeVideoIdRef = useRef(activeVideoId)
+
+  useEffect(() => { activeVideoIdRef.current = activeVideoId }, [activeVideoId])
 
   useEffect(() => {
     if (typeof window.YT === 'undefined') {
@@ -59,9 +62,14 @@ export default function YouTubePlayer() {
     playerRef.current = new window.YT.Player(containerRef.current, {
       width: '100%',
       height: '100%',
-      videoId: '',
+      videoId: activeVideoIdRef.current || '',
       playerVars: { autoplay: 0, rel: 0, modestbranding: 1 },
       events: {
+        onReady: () => {
+          if (activeVideoIdRef.current) {
+            playerRef.current?.loadVideoById(activeVideoIdRef.current)
+          }
+        },
         onStateChange: (event) => {
           dispatch(setPlaying(event.data === 1))
         },
