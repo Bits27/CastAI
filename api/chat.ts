@@ -153,13 +153,17 @@ Only cite transcript chunks, not the insights section. If context is insufficien
         const closeIdx = remaining.indexOf(']')
         if (closeIdx === -1) break // incomplete citation — keep in buffer
         const pattern = remaining.slice(0, closeIdx + 1)
-        processed += pattern.replace(
+        console.log('Citation pattern found:', pattern)
+        const replaced = pattern.replace(
           /\[SOURCE:(\d+):([^:]+):([\d.]+)s?\]/g,
           (_, idx, title, ts) => {
             const c = chunks[parseInt(idx) - 1]
+            console.log('Replacing citation idx:', idx, 'chunk found:', !!c)
             return c ? `[SOURCE:${c.id}:${c.video_id}:${title}:${parseFloat(ts)}]` : ''
           }
         )
+        console.log('After replace:', replaced)
+        processed += replaced
         remaining = remaining.slice(closeIdx + 1)
       }
       buffer = remaining
