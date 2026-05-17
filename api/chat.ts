@@ -57,8 +57,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // Embed query
-  const embModel = genai.getGenerativeModel({ model: 'text-embedding-004' }, { apiVersion: 'v1' })
-  const embRes = await embModel.embedContent(query)
+  const embModel = genai.getGenerativeModel({ model: 'gemini-embedding-001' })
+  const embRes = await embModel.embedContent({
+    content: { parts: [{ text: query }], role: 'user' },
+    outputDimensionality: 768,
+  } as any)
   const queryEmbedding = embRes.embedding.values
 
   // Vector search

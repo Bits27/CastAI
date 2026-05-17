@@ -85,18 +85,20 @@ function chunkTranscript(entries: { text: string; offset: number; duration: numb
 }
 
 async function embedTexts(texts: string[]): Promise<number[][]> {
-  const BATCH_SIZE = 100
-  const model = genai.getGenerativeModel({ model: 'text-embedding-004' }, { apiVersion: 'v1' })
+  const BATCH_SIZE = 20
+  const model = genai.getGenerativeModel({ model: 'gemini-embedding-001' })
   const embeddings: number[][] = []
   for (let i = 0; i < texts.length; i += BATCH_SIZE) {
     const batch = texts.slice(i, i + BATCH_SIZE)
-    const result = await model.batchEmbedContents({
-      requests: batch.map(text => ({
-        content: { parts: [{ text }], role: 'user' },
-        model: 'models/text-embedding-004',
-      })),
-    })
-    embeddings.push(...result.embeddings.map(e => e.values ?? []))
+    const results = await Promise.all(
+      batch.map(text =>
+        model.embedContent({
+          content: { parts: [{ text }], role: 'user' },
+          outputDimensionality: 768,
+        } as any)
+      )
+    )
+    embeddings.push(...results.map(r => r.embedding.values ?? []))
   }
   return embeddings
 }
