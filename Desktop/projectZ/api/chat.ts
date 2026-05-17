@@ -89,15 +89,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     videoInfoMap[vid] = { title: video?.title ?? 'Unknown Video', insights: insights ?? null }
   }))
 
-  // Build insights summary for all videos
+  // Build insights summary for all videos (include all, even those without insights)
   const insightsSummary = resolvedVideoIds
     .map(vid => {
       const info = videoInfoMap[vid]
-      if (!info?.insights) return null
+      if (!info) return null
       const parts = [`Video: "${info.title}"`]
-      if (info.insights.speakers?.length) parts.push(`Speakers: ${(info.insights.speakers as string[]).join(', ')}`)
-      if (info.insights.summary) parts.push(`Summary: ${(info.insights.summary as string).slice(0, 300)}`)
-      if (info.insights.topics?.length) parts.push(`Topics: ${(info.insights.topics as string[]).join(', ')}`)
+      if (info.insights?.speakers?.length) parts.push(`Speakers: ${(info.insights.speakers as string[]).join(', ')}`)
+      if (info.insights?.summary) parts.push(`Summary: ${(info.insights.summary as string).slice(0, 300)}`)
+      if (info.insights?.topics?.length) parts.push(`Topics: ${(info.insights.topics as string[]).join(', ')}`)
+      if (!info.insights) parts.push(`(No insights extracted yet — refer to transcript chunks only)`)
       return parts.join('\n')
     })
     .filter(Boolean)
@@ -113,9 +114,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const systemPrompt = `You are CastAI, an AI assistant that helps users understand their video library.
 Answer questions using ONLY the provided context. Be concise and well-formatted.
 Use numbered lists, line breaks, and clear structure in your responses.
-When citing a transcript chunk, append a citation in this exact format immediately after the relevant sentence: [SOURCE:N:videoTitle:timestamp]
-where N is the chunk number (e.g. 1, 2, 3), videoTitle is the exact title from the context, and timestamp is the number shown (e.g. 42, not 42s).
-Only cite transcript chunks, not the insights section. If context is insufficient, say so clearly.`
+When referencing a specific transcript chunk, append a citation immediately after the sentence: [SOURCE:N:videoTitle:timestamp]
+where N is the chunk number from the transcript section (e.g. 1, 2, 3), videoTitle is the exact title, and timestamp is the integer shown (e.g. 42).
+For every video in the context, always include its takeaways even if insights are missing — use transcript chunks as fallback.
+If context is truly insufficient for a video, say so explicitly for that video only.`
 
   const userPrompt = `Video insights:\n\n${insightsSummary}\n\nRelevant transcript chunks:\n\n${contextBlocks}\n\nQuestion: ${query}`
 
@@ -153,17 +155,13 @@ Only cite transcript chunks, not the insights section. If context is insufficien
         const closeIdx = remaining.indexOf(']')
         if (closeIdx === -1) break // incomplete citation — keep in buffer
         const pattern = remaining.slice(0, closeIdx + 1)
-        console.log('Citation pattern found:', pattern)
-        const replaced = pattern.replace(
+        processed += pattern.replace(
           /\[SOURCE:(\d+):([^:]+):([\d.]+)s?\]/g,
           (_, idx, title, ts) => {
             const c = chunks[parseInt(idx) - 1]
-            console.log('Replacing citation idx:', idx, 'chunk found:', !!c)
             return c ? `[SOURCE:${c.id}:${c.video_id}:${title}:${parseFloat(ts)}]` : ''
           }
         )
-        console.log('After replace:', replaced)
-        processed += replaced
         remaining = remaining.slice(closeIdx + 1)
       }
       buffer = remaining
