@@ -3,8 +3,10 @@ import { requireAuth } from './_lib/auth.js'
 import { db, schema, neonSql } from './_lib/db.js'
 import { eq } from 'drizzle-orm'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import Groq from 'groq-sdk'
 
 const genai = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 
 interface ChunkResult {
   id: string
@@ -106,16 +108,19 @@ If the context doesn't contain enough information, say so clearly.`
   res.setHeader('Connection', 'keep-alive')
 
   try {
-    const chatModel = genai.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      systemInstruction: systemPrompt,
+    const stream = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      stream: true,
     })
-    const result = await chatModel.generateContentStream(userPrompt)
 
     // Buffer to handle SOURCE citations that may span multiple chunks
     let buffer = ''
-    for await (const chunk of result.stream) {
-      buffer += chunk.text()
+    for await (const chunk of stream) {
+      buffer += chunk.choices[0]?.delta?.content ?? ''
 
       let processed = ''
       let remaining = buffer
