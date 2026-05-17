@@ -66,30 +66,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } as any)
   const queryEmbedding = embRes.embedding.values
 
-  // Vector search
+  // Vector search — fetch more chunks to ensure coverage across multiple videos
   const chunks = await neonSql`
     SELECT * FROM match_chunks(
       ${JSON.stringify(queryEmbedding)}::vector,
-      5,
+      15,
       ${resolvedVideoIds}::uuid[]
     )
   ` as ChunkResult[]
 
-  // Fetch video titles for context
-  const videoTitleMap: Record<string, string> = {}
-  for (const chunk of chunks) {
-    if (!videoTitleMap[chunk.video_id]) {
-      const [video] = await db
-        .select({ title: schema.videos.title })
-        .from(schema.videos)
-        .where(eq(schema.videos.id, chunk.video_id))
-      videoTitleMap[chunk.video_id] = video?.title ?? 'Unknown Video'
-    }
-  }
+  // Fetch video titles + insights for all resolved videos
+  const videoInfoMap: Record<string, { title: string; insights: any }> = {}
+  await Promise.all(resolvedVideoIds.map(async (vid) => {
+    const [video] = await db
+      .select({ title: schema.videos.title })
+      .from(schema.videos)
+      .where(eq(schema.videos.id, vid))
+    const [insights] = await db
+      .select()
+      .from(schema.videoInsights)
+      .where(eq(schema.videoInsights.videoId, vid))
+    videoInfoMap[vid] = { title: video?.title ?? 'Unknown Video', insights: insights ?? null }
+  }))
+
+  // Build insights summary for all videos
+  const insightsSummary = resolvedVideoIds
+    .map(vid => {
+      const info = videoInfoMap[vid]
+      if (!info?.insights) return null
+      const parts = [`Video: "${info.title}"`]
+      if (info.insights.speakers?.length) parts.push(`Speakers: ${(info.insights.speakers as string[]).join(', ')}`)
+      if (info.insights.summary) parts.push(`Summary: ${info.insights.summary}`)
+      if (info.insights.topics?.length) parts.push(`Topics: ${(info.insights.topics as string[]).join(', ')}`)
+      return parts.join('\n')
+    })
+    .filter(Boolean)
+    .join('\n\n')
 
   // Build context blocks
   const contextBlocks = chunks.map((chunk, i) => {
-    const title = videoTitleMap[chunk.video_id]
+    const title = videoInfoMap[chunk.video_id]?.title ?? 'Unknown Video'
     const ts = Math.round(chunk.start_time_seconds)
     return `[${i + 1}] From "${title}" at ${ts}s:\n${chunk.content}`
   }).join('\n\n')
@@ -100,7 +116,7 @@ After each relevant sentence, include a citation in this exact format: [SOURCE:c
 Replace chunkId, videoTitle, and startSeconds with the actual values from the context.
 If the context doesn't contain enough information, say so clearly.`
 
-  const userPrompt = `Context from videos:\n\n${contextBlocks}\n\nQuestion: ${query}`
+  const userPrompt = `Video insights:\n\n${insightsSummary}\n\nRelevant transcript chunks:\n\n${contextBlocks}\n\nQuestion: ${query}`
 
   // Stream response
   res.setHeader('Content-Type', 'text/event-stream')
