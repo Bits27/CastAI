@@ -7,41 +7,26 @@ import { Resend } from 'resend'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 async function fetchYouTubeTranscript(videoId: string): Promise<{ text: string; offset: number; duration: number }[]> {
-  // Use YouTube's internal player API — more reliable from cloud IPs than page scraping
-  const playerRes = await fetch(
-    'https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
-      body: JSON.stringify({
-        context: { client: { clientName: 'WEB', clientVersion: '2.20240101.00.00', hl: 'en', gl: 'US' } },
-        videoId,
-      }),
-    }
+  const apiKey = process.env.SUPADATA_API_KEY
+  if (!apiKey) throw new Error('SUPADATA_API_KEY is not set')
+
+  const res = await fetch(
+    `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&text=false`,
+    { headers: { 'x-api-key': apiKey } }
   )
-  if (!playerRes.ok) throw new Error(`Player API failed: ${playerRes.status}`)
-  const playerData = await playerRes.json() as any
+  if (!res.ok) throw new Error(`Supadata API failed: ${res.status}`)
 
-  const tracks = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks
-  if (!tracks?.length) throw new Error('No caption tracks found on this video')
-
-  const track = tracks.find((t: any) => t.languageCode?.startsWith('en')) ?? tracks[0]
-  const captionUrl = `${track.baseUrl}&fmt=json3`
-
-  const captionRes = await fetch(captionUrl)
-  if (!captionRes.ok) throw new Error(`Caption fetch failed: ${captionRes.status}`)
-  const captionData = await captionRes.json() as {
-    events?: { tStartMs?: number; dDurationMs?: number; segs?: { utf8?: string }[] }[]
+  const data = await res.json() as {
+    content?: { text: string; offset: number; duration: number }[]
   }
 
-  return (captionData.events ?? [])
-    .filter(e => e.segs)
-    .map(e => ({
-      text: e.segs!.map(s => s.utf8 ?? '').join('').trim(),
-      offset: e.tStartMs ?? 0,
-      duration: e.dDurationMs ?? 0,
-    }))
-    .filter(e => e.text)
+  if (!data.content?.length) throw new Error('No transcript content returned')
+
+  return data.content.map(s => ({
+    text: s.text,
+    offset: s.offset,
+    duration: s.duration,
+  }))
 }
 
 const genai = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
