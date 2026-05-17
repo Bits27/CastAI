@@ -1,3 +1,4 @@
+import ReactMarkdown from 'react-markdown'
 import type { ChatMessage as IChatMessage, Citation } from '../store/chatSlice'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
 import { setActiveVideo, seekTo } from '../store/playerSlice'
@@ -49,7 +50,17 @@ export default function ChatMessage({ message }: Props) {
           }`}
         >
           {message.content ? (
-            <span className="whitespace-pre-wrap">{message.content}</span>
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                ul: ({ children }) => <ul className="list-disc pl-4 mb-1">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal pl-4 mb-1">{children}</ol>,
+                li: ({ children }) => <li className="mb-0.5">{children}</li>,
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
           ) : (
             <span className="flex items-center gap-1 text-gray-400">
               <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
