@@ -31,7 +31,7 @@ const initialState: ChatState = {
 const CITATION_RE = /\[SOURCE:([^:]+):([^:]+):([^:]+):([^\]]+)\]/g
 
 function stripCitations(text: string): string {
-  return text.replace(CITATION_RE, '').replace(/\s{2,}/g, ' ').trim()
+  return text.replace(CITATION_RE, '').replace(/[^\S\n]{2,}/g, ' ').trim()
 }
 
 function extractCitations(text: string): Citation[] {
