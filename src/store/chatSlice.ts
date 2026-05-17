@@ -95,8 +95,9 @@ export const sendMessage = createAsyncThunk(
             dispatch(chatSlice.actions.setError('Something went wrong. Please try again.'))
             return
           }
-          accumulated += data
-          dispatch(chatSlice.actions.appendToken({ id: assistantMsgId, token: data }))
+          const decoded = data.replace(/\\n/g, '\n')
+          accumulated += decoded
+          dispatch(chatSlice.actions.appendToken({ id: assistantMsgId, token: decoded }))
         }
       }
     }

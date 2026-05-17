@@ -146,10 +146,10 @@ If the context doesn't contain enough information, say so clearly.`
         remaining = remaining.slice(closeIdx + 1)
       }
       buffer = remaining
-      if (processed) res.write(`data: ${processed}\n\n`)
+      if (processed) res.write(`data: ${processed.replace(/\n/g, '\\n')}\n\n`)
     }
 
-    if (buffer) res.write(`data: ${buffer}\n\n`)
+    if (buffer) res.write(`data: ${buffer.replace(/\n/g, '\\n')}\n\n`)
     res.write('data: [DONE]\n\n')
     res.end()
   } catch (err) {

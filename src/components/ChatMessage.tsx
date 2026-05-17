@@ -48,7 +48,9 @@ export default function ChatMessage({ message }: Props) {
               : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm'
           }`}
         >
-          {message.content || (
+          {message.content ? (
+            <span className="whitespace-pre-wrap">{message.content}</span>
+          ) : (
             <span className="flex items-center gap-1 text-gray-400">
               <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
               <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
