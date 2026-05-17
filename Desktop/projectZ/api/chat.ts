@@ -107,14 +107,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const contextBlocks = chunks.map((chunk, i) => {
     const title = videoInfoMap[chunk.video_id]?.title ?? 'Unknown Video'
     const ts = Math.round(chunk.start_time_seconds)
-    return `[${i + 1}] From "${title}" at ${ts}s:\n${chunk.content}`
+    return `[${i + 1}] From "${title}" at ${ts}:\n${chunk.content}`
   }).join('\n\n')
 
   const systemPrompt = `You are CastAI, an AI assistant that helps users understand their video library.
-Answer questions using ONLY the provided context. Be concise and insightful.
-After each relevant sentence, include a citation in this exact format: [SOURCE:chunkId:videoTitle:startSeconds]
-Replace chunkId, videoTitle, and startSeconds with the actual values from the context.
-If the context doesn't contain enough information, say so clearly.`
+Answer questions using ONLY the provided context. Be concise and well-formatted.
+Use numbered lists, line breaks, and clear structure in your responses.
+When citing a transcript chunk, append a citation in this exact format immediately after the relevant sentence: [SOURCE:N:videoTitle:timestamp]
+where N is the chunk number (e.g. 1, 2, 3), videoTitle is the exact title from the context, and timestamp is the number shown (e.g. 42, not 42s).
+Only cite transcript chunks, not the insights section. If context is insufficient, say so clearly.`
 
   const userPrompt = `Video insights:\n\n${insightsSummary}\n\nRelevant transcript chunks:\n\n${contextBlocks}\n\nQuestion: ${query}`
 
@@ -153,10 +154,10 @@ If the context doesn't contain enough information, say so clearly.`
         if (closeIdx === -1) break // incomplete citation — keep in buffer
         const pattern = remaining.slice(0, closeIdx + 1)
         processed += pattern.replace(
-          /\[SOURCE:(\d+):([^:]+):(\d+)\]/g,
+          /\[SOURCE:(\d+):([^:]+):([\d.]+)s?\]/g,
           (_, idx, title, ts) => {
             const c = chunks[parseInt(idx) - 1]
-            return c ? `[SOURCE:${c.id}:${c.video_id}:${title}:${ts}]` : ''
+            return c ? `[SOURCE:${c.id}:${c.video_id}:${title}:${parseFloat(ts)}]` : ''
           }
         )
         remaining = remaining.slice(closeIdx + 1)
