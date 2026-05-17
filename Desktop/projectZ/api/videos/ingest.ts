@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm'
 import { google } from 'googleapis'
 import { Resend } from 'resend'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import Groq from 'groq-sdk'
 
 async function fetchYouTubeTranscript(videoId: string): Promise<{ text: string; offset: number; duration: number }[]> {
   const apiKey = process.env.SUPADATA_API_KEY
@@ -32,6 +33,7 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ text: string; 
 }
 
 const genai = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 const resend = new Resend(process.env.RESEND_API_KEY)
 const youtube = google.youtube({ version: 'v3', auth: process.env.YOUTUBE_API_KEY })
 
@@ -216,9 +218,11 @@ Return only valid JSON, no markdown.`
 
     let insights = { summary: '', speakers: [], key_claims: [], top_quotes: [], topics: [] }
     try {
-      const insightModel = genai.getGenerativeModel({ model: 'gemini-2.0-flash' })
-      const insightRes = await insightModel.generateContent(insightPrompt)
-      const raw = insightRes.response.text().replace(/^```json\n?/, '').replace(/\n?```$/, '').trim()
+      const insightRes = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: insightPrompt }],
+      })
+      const raw = (insightRes.choices[0]?.message?.content ?? '').replace(/^```json\n?/, '').replace(/\n?```$/, '').trim()
       insights = JSON.parse(raw)
     } catch (err) {
       console.error('Insight extraction error:', err)
