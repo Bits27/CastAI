@@ -10,23 +10,25 @@ async function fetchYouTubeTranscript(videoId: string): Promise<{ text: string; 
   const apiKey = process.env.SUPADATA_API_KEY
   if (!apiKey) throw new Error('SUPADATA_API_KEY is not set')
 
-  const res = await fetch(
-    `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&text=false`,
-    { headers: { 'x-api-key': apiKey } }
-  )
-  if (!res.ok) throw new Error(`Supadata API failed: ${res.status}`)
+  // Try English first, fall back to any available language
+  for (const lang of ['en', '']) {
+    const url = `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&text=false${lang ? `&lang=${lang}` : ''}`
+    const res = await fetch(url, { headers: { 'x-api-key': apiKey } })
+    if (!res.ok) continue
 
-  const data = await res.json() as {
-    content?: { text: string; offset: number; duration: number }[]
+    const data = await res.json() as {
+      content?: { text: string; offset: number; duration: number }[]
+    }
+    if (!data.content?.length) continue
+
+    return data.content.map(s => ({
+      text: s.text,
+      offset: s.offset,
+      duration: s.duration,
+    }))
   }
 
-  if (!data.content?.length) throw new Error('No transcript content returned')
-
-  return data.content.map(s => ({
-    text: s.text,
-    offset: s.offset,
-    duration: s.duration,
-  }))
+  throw new Error('No transcript content returned')
 }
 
 const genai = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
