@@ -219,7 +219,7 @@ Return only valid JSON, no markdown.`
     let insights = { summary: '', speakers: [], key_claims: [], top_quotes: [], topics: [] }
     try {
       const insightRes = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: insightPrompt }],
       })
       const raw = (insightRes.choices[0]?.message?.content ?? '').replace(/^```json\n?/, '').replace(/\n?```$/, '').trim()

@@ -70,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const chunks = await neonSql`
     SELECT * FROM match_chunks(
       ${JSON.stringify(queryEmbedding)}::vector,
-      15,
+      8,
       ${resolvedVideoIds}::uuid[]
     )
   ` as ChunkResult[]
@@ -96,7 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!info?.insights) return null
       const parts = [`Video: "${info.title}"`]
       if (info.insights.speakers?.length) parts.push(`Speakers: ${(info.insights.speakers as string[]).join(', ')}`)
-      if (info.insights.summary) parts.push(`Summary: ${info.insights.summary}`)
+      if (info.insights.summary) parts.push(`Summary: ${(info.insights.summary as string).slice(0, 300)}`)
       if (info.insights.topics?.length) parts.push(`Topics: ${(info.insights.topics as string[]).join(', ')}`)
       return parts.join('\n')
     })
@@ -126,7 +126,7 @@ Only cite transcript chunks, not the insights section. If context is insufficien
 
   try {
     const stream = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
