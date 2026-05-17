@@ -86,7 +86,7 @@ function chunkTranscript(entries: { text: string; offset: number; duration: numb
 
 async function embedTexts(texts: string[]): Promise<number[][]> {
   const BATCH_SIZE = 100
-  const model = genai.getGenerativeModel({ model: 'text-embedding-004' })
+  const model = genai.getGenerativeModel({ model: 'text-embedding-004' }, { apiVersion: 'v1' })
   const embeddings: number[][] = []
   for (let i = 0; i < texts.length; i += BATCH_SIZE) {
     const batch = texts.slice(i, i + BATCH_SIZE)

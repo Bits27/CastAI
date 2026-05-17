@@ -57,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // Embed query
-  const embModel = genai.getGenerativeModel({ model: 'text-embedding-004' })
+  const embModel = genai.getGenerativeModel({ model: 'text-embedding-004' }, { apiVersion: 'v1' })
   const embRes = await embModel.embedContent(query)
   const queryEmbedding = embRes.embedding.values
 
