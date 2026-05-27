@@ -44,10 +44,10 @@ export default function Landing() {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white text-gray-900">
 
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-5 max-w-6xl mx-auto border-b border-gray-100">
+      <nav className="flex items-center justify-between px-6 py-5 max-w-6xl mx-auto border-b border-gray-100/80">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-sm">C</div>
           <span className="font-bold text-lg tracking-tight text-gray-900">CastAI</span>
@@ -70,7 +70,10 @@ export default function Landing() {
       </nav>
 
       {/* Hero */}
-      <section className="flex flex-col items-center text-center px-6 pt-20 pb-24 max-w-4xl mx-auto">
+      <section className="relative flex flex-col items-center text-center px-6 pt-20 pb-24 max-w-4xl mx-auto">
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute left-1/2 top-0 -translate-x-1/2 w-[600px] h-[400px] bg-purple-100/60 rounded-full blur-3xl" />
+        </div>
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-purple-600 text-xs font-medium mb-8 tracking-wide">
           <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
           Powered by Groq · Gemini Embeddings · Neon pgvector
@@ -114,7 +117,6 @@ export default function Landing() {
               Go to Dashboard
             </button>
           </SignedIn>
-        </div>
       </section>
 
       {/* How it works */}
