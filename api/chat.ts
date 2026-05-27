@@ -114,8 +114,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const systemPrompt = `You are CastAI, an AI assistant that helps users understand their video library.
 Answer questions using ONLY the provided context. Be concise and well-formatted.
 Use numbered lists, line breaks, and clear structure in your responses.
-When referencing a specific transcript chunk, append a citation immediately after the sentence: [SOURCE:N:videoTitle:timestamp]
-where N is the chunk number from the transcript section (e.g. 1, 2, 3), videoTitle is the exact title, and timestamp is the integer shown (e.g. 42).
 For every video in the context, always include its takeaways even if insights are missing — use transcript chunks as fallback.
 If context is truly insufficient for a video, say so explicitly for that video only.`
 
@@ -125,6 +123,14 @@ If context is truly insufficient for a video, say so explicitly for that video o
   res.setHeader('Content-Type', 'text/event-stream')
   res.setHeader('Cache-Control', 'no-cache')
   res.setHeader('Connection', 'keep-alive')
+
+  // Build citations payload from retrieved chunks
+  const citationsPayload = chunks.map((chunk) => ({
+    chunkId: chunk.id,
+    videoId: chunk.video_id,
+    videoTitle: videoInfoMap[chunk.video_id]?.title ?? 'Unknown Video',
+    startSeconds: Math.round(chunk.start_time_seconds),
+  }))
 
   try {
     const stream = await groq.chat.completions.create({
@@ -136,40 +142,13 @@ If context is truly insufficient for a video, say so explicitly for that video o
       stream: true,
     })
 
-    // Buffer to handle SOURCE citations that may span multiple chunks
-    let buffer = ''
     for await (const chunk of stream) {
-      buffer += chunk.choices[0]?.delta?.content ?? ''
-
-      let processed = ''
-      let remaining = buffer
-      while (true) {
-        const sourceIdx = remaining.indexOf('[SOURCE:')
-        if (sourceIdx === -1) {
-          processed += remaining
-          remaining = ''
-          break
-        }
-        processed += remaining.slice(0, sourceIdx)
-        remaining = remaining.slice(sourceIdx)
-        const closeIdx = remaining.indexOf(']')
-        if (closeIdx === -1) break // incomplete citation — keep in buffer
-        const pattern = remaining.slice(0, closeIdx + 1)
-        processed += pattern.replace(
-          /\[SOURCE:(\d+):([^:]+):([\d.]+)s?\]/g,
-          (_, idx, title, ts) => {
-            const c = chunks[parseInt(idx) - 1]
-            return c ? `[SOURCE:${c.id}:${c.video_id}:${title}:${parseFloat(ts)}]` : ''
-          }
-        )
-        remaining = remaining.slice(closeIdx + 1)
-      }
-      buffer = remaining
-      if (processed) res.write(`data: ${processed.replace(/\n/g, '\\n')}\n\n`)
+      const token = chunk.choices[0]?.delta?.content ?? ''
+      if (token) res.write(`data: ${token.replace(/\n/g, '\\n')}\n\n`)
     }
 
-    if (buffer) res.write(`data: ${buffer.replace(/\n/g, '\\n')}\n\n`)
     res.write('data: [DONE]\n\n')
+    res.write(`data: [CITATIONS:${JSON.stringify(citationsPayload)}]\n\n`)
     res.end()
   } catch (err) {
     console.error('Chat stream error:', err)
