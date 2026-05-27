@@ -22,8 +22,25 @@ interface ChatState {
   error: string | null
 }
 
+const STORAGE_KEY = 'castai_chat_messages'
+
+function loadMessages(): ChatMessage[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+export function saveChatMessages(messages: ChatMessage[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages))
+  } catch { /* ignore quota errors */ }
+}
+
 const initialState: ChatState = {
-  messages: [],
+  messages: loadMessages(),
   streaming: false,
   error: null,
 }
