@@ -72,7 +72,7 @@ export default function VideoCard({ video }: Props) {
 
   return (
     <div
-      className={`group relative rounded-xl overflow-hidden border cursor-pointer transition-all ${
+      className={`group relative rounded-xl overflow-hidden border cursor-pointer transition-all flex flex-col ${
         isSelected ? 'border-purple-500 ring-2 ring-purple-200' : 'border-gray-200 hover:border-gray-300'
       } bg-white`}
       onClick={() => dispatch(toggleVideoSelected(video.id))}
@@ -131,22 +131,24 @@ export default function VideoCard({ video }: Props) {
       </div>
 
       {/* Info */}
-      <div className="p-3">
-        <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug">
-          {video.title ?? video.youtubeId}
-        </p>
-        {video.channel && (
-          <p className="text-xs text-gray-500 mt-0.5 truncate">{video.channel}</p>
-        )}
-        {videoCollection && (
-          <span className="inline-flex items-center gap-1 text-xs text-purple-600 mt-0.5 truncate">
-            <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-            </svg>
-            {videoCollection.name}
-          </span>
-        )}
-        <div className="flex items-center justify-between mt-2">
+      <div className="p-3 flex flex-col flex-1">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug">
+            {video.title ?? video.youtubeId}
+          </p>
+          {video.channel && (
+            <p className="text-xs text-gray-500 mt-0.5 truncate">{video.channel}</p>
+          )}
+          {videoCollection && (
+            <span className="inline-flex items-center gap-1 text-xs text-purple-600 mt-0.5 truncate">
+              <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              {videoCollection.name}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
           <StatusBadge status={video.status} />
           <div className="flex items-center gap-2">
             {video.status === 'failed' && (
