@@ -87,14 +87,22 @@ export default function Chat() {
                     <button
                       key={video.id}
                       onClick={() => dispatch(toggleVideoSelected(video.id))}
-                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition-colors ${
-                        isSelected ? 'bg-purple-100 text-purple-700' : 'hover:bg-gray-100 text-gray-600'
+                      className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left text-xs transition-colors border ${
+                        isSelected
+                          ? 'bg-purple-50 border-purple-300 text-purple-800'
+                          : 'border-transparent hover:bg-gray-100 text-gray-600'
                       }`}
                     >
-                      <div className={`w-3 h-3 rounded-sm border flex-shrink-0 ${
-                        isSelected ? 'bg-purple-500 border-purple-500' : 'border-gray-300'
-                      }`} />
-                      <span className="truncate">{video.title ?? video.youtubeId}</span>
+                      <div className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+                        isSelected ? 'bg-purple-600 border-purple-600' : 'border-gray-300 bg-white'
+                      }`}>
+                        {isSelected && (
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="truncate flex-1">{video.title ?? video.youtubeId}</span>
                     </button>
                   )
                 })}
