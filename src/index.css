@@ -13,3 +13,29 @@ body {
 #root {
   min-height: 100vh;
 }
+
+@keyframes orb-float-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(60px, -80px) scale(1.08); }
+  66%       { transform: translate(-40px, 40px) scale(0.95); }
+}
+@keyframes orb-float-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(-70px, -50px) scale(1.1); }
+}
+@keyframes orb-float-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%       { transform: translate(50px, 60px) scale(0.92); }
+  80%       { transform: translate(-30px, -30px) scale(1.05); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.orb-a { animation: orb-float-a 14s ease-in-out infinite; }
+.orb-b { animation: orb-float-b 18s ease-in-out infinite; }
+.orb-c { animation: orb-float-c 22s ease-in-out infinite; }
+.fade-up { animation: fade-up 0.7s ease both; }
+.fade-up-delay { animation: fade-up 0.7s ease 0.15s both; }
+.fade-up-delay-2 { animation: fade-up 0.7s ease 0.3s both; }
