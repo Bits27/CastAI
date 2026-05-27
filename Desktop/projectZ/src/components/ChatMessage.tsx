@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import type { ChatMessage as IChatMessage, Citation } from '../store/chatSlice'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
@@ -28,24 +29,29 @@ function CitationChip({ citation }: { citation: Citation }) {
   return (
     <button
       onClick={handleClick}
-      className="inline-flex items-center gap-2 text-xs bg-white border border-gray-200 hover:border-purple-400 hover:bg-purple-50 text-gray-600 hover:text-purple-700 px-3 py-1.5 rounded-lg shadow-sm transition-all hover:shadow-purple-100"
+      className="inline-flex items-center gap-2 text-xs bg-white border border-gray-200 hover:border-purple-400 hover:bg-purple-50 text-gray-600 hover:text-purple-700 px-3 py-1.5 rounded-lg shadow-sm transition-all"
       title={`Jump to ${formatTime(citation.startSeconds)}`}
     >
       <svg className="w-3 h-3 text-purple-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
       </svg>
       <span className="truncate max-w-[140px]">{citation.videoTitle}</span>
-      <span className="font-mono font-semibold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded flex-shrink-0">{formatTime(citation.startSeconds)}</span>
+      <span className="font-mono font-semibold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded flex-shrink-0">
+        {formatTime(citation.startSeconds)}
+      </span>
     </button>
   )
 }
 
 export default function ChatMessage({ message }: Props) {
   const isUser = message.role === 'user'
+  const [showCitations, setShowCitations] = useState(false)
+  const hasCitations = message.citations.length > 0
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div className={`max-w-[80%] ${isUser ? '' : 'w-full'}`}>
+        {/* Message bubble */}
         <div
           className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
             isUser
@@ -73,11 +79,27 @@ export default function ChatMessage({ message }: Props) {
             </span>
           )}
         </div>
-        {message.citations.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3 pl-1">
-            {message.citations.map((citation, i) => (
-              <CitationChip key={i} citation={citation} />
-            ))}
+
+        {/* Citations toggle button */}
+        {hasCitations && (
+          <div className="mt-2 pl-1">
+            <button
+              onClick={() => setShowCitations((v) => !v)}
+              className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-purple-600 transition-colors"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              {showCitations ? 'Hide' : 'Show'} sources ({message.citations.length})
+            </button>
+
+            {showCitations && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {message.citations.map((citation, i) => (
+                  <CitationChip key={i} citation={citation} />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
