@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Video } from '../store/videosSlice'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
-import { toggleVideoSelected, deleteVideo, ingestVideo } from '../store/videosSlice'
+import { toggleVideoSelected, deleteVideo, ingestVideo, assignVideoCollection } from '../store/videosSlice'
 import { setActiveVideo } from '../store/playerSlice'
 
 interface Props {
@@ -47,9 +47,12 @@ export default function VideoCard({ video }: Props) {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const isSelected = useAppSelector((s) => s.videos.selectedVideoIds.includes(video.id))
+  const collections = useAppSelector((s) => s.collections.collections)
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [retrying, setRetrying] = useState(false)
+  const [showCollectionPicker, setShowCollectionPicker] = useState(false)
+  const pickerRef = useRef<HTMLDivElement>(null)
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
@@ -157,6 +160,45 @@ export default function VideoCard({ video }: Props) {
                 Play
               </button>
             )}
+            <div className="relative" ref={pickerRef}>
+              <button
+                className="text-xs text-gray-400 hover:text-gray-700 font-medium"
+                onClick={(e) => { e.stopPropagation(); setShowCollectionPicker((v) => !v) }}
+                title="Add to collection"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+              </button>
+              {showCollectionPicker && (
+                <div
+                  className="absolute bottom-6 right-0 z-20 w-44 bg-white rounded-xl border border-gray-200 shadow-lg py-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <p className="text-xs text-gray-400 px-3 py-1.5 border-b border-gray-100">Add to collection</p>
+                  {collections.length === 0 && (
+                    <p className="text-xs text-gray-400 px-3 py-2">No collections yet</p>
+                  )}
+                  {video.collectionId && (
+                    <button
+                      onClick={() => { dispatch(assignVideoCollection({ id: video.id, collectionId: null })); setShowCollectionPicker(false) }}
+                      className="w-full text-left text-xs px-3 py-1.5 text-red-500 hover:bg-red-50"
+                    >
+                      Remove from collection
+                    </button>
+                  )}
+                  {collections.map((col) => (
+                    <button
+                      key={col.id}
+                      onClick={() => { dispatch(assignVideoCollection({ id: video.id, collectionId: col.id })); setShowCollectionPicker(false) }}
+                      className={`w-full text-left text-xs px-3 py-1.5 hover:bg-purple-50 hover:text-purple-700 ${video.collectionId === col.id ? 'text-purple-600 font-medium' : 'text-gray-700'}`}
+                    >
+                      {video.collectionId === col.id ? '✓ ' : ''}{col.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               className="text-xs text-gray-400 hover:text-gray-700 font-medium"
               onClick={(e) => {
