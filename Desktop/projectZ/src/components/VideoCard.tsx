@@ -2,8 +2,7 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Video } from '../store/videosSlice'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
-import { toggleVideoSelected, deleteVideo, ingestVideo, assignVideoCollection } from '../store/videosSlice'
-import { setActiveVideo } from '../store/playerSlice'
+import { deleteVideo, ingestVideo, assignVideoCollection } from '../store/videosSlice'
 
 interface Props {
   video: Video
@@ -46,7 +45,6 @@ function formatDuration(seconds: number | null): string {
 export default function VideoCard({ video }: Props) {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  const isSelected = useAppSelector((s) => s.videos.selectedVideoIds.includes(video.id))
   const collections = useAppSelector((s) => s.collections.collections)
   const videoCollection = collections.find((c) => c.id === video.collectionId) ?? null
   const [confirming, setConfirming] = useState(false)
@@ -72,10 +70,8 @@ export default function VideoCard({ video }: Props) {
 
   return (
     <div
-      className={`group relative rounded-xl overflow-hidden border cursor-pointer transition-all flex flex-col ${
-        isSelected ? 'border-purple-500 ring-2 ring-purple-200' : 'border-gray-200 hover:border-gray-300'
-      } bg-white`}
-      onClick={() => dispatch(toggleVideoSelected(video.id))}
+      className="group relative rounded-xl overflow-hidden border border-gray-200 hover:border-purple-300 hover:shadow-md cursor-pointer transition-all flex flex-col bg-white"
+      onClick={() => navigate(`/dashboard/video/${video.id}`)}
     >
       {/* Thumbnail */}
       <div className="relative aspect-video bg-gray-100">
@@ -93,15 +89,8 @@ export default function VideoCard({ video }: Props) {
             {formatDuration(video.durationSeconds)}
           </span>
         )}
-        {isSelected && (
-          <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
-            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          </div>
-        )}
 
-        {/* Delete overlay — visible on hover */}
+        {/* Delete overlay */}
         <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
           {confirming ? (
             <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
@@ -160,20 +149,9 @@ export default function VideoCard({ video }: Props) {
                 {retrying ? 'Retrying...' : 'Retry'}
               </button>
             )}
-            {video.status === 'done' && (
-              <button
-                className="text-xs text-purple-600 hover:text-purple-800 font-medium"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  dispatch(setActiveVideo(video.youtubeId))
-                }}
-              >
-                Play
-              </button>
-            )}
             <div className="relative" ref={pickerRef}>
               <button
-                className="text-xs text-gray-400 hover:text-gray-700 font-medium"
+                className="text-xs text-gray-400 hover:text-gray-700"
                 onClick={(e) => { e.stopPropagation(); setShowCollectionPicker((v) => !v) }}
                 title="Add to collection"
               >
@@ -210,15 +188,6 @@ export default function VideoCard({ video }: Props) {
                 </div>
               )}
             </div>
-            <button
-              className="text-xs text-gray-400 hover:text-gray-700 font-medium"
-              onClick={(e) => {
-                e.stopPropagation()
-                navigate(`/dashboard/video/${video.id}`)
-              }}
-            >
-              Details
-            </button>
           </div>
         </div>
       </div>
