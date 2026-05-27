@@ -48,6 +48,7 @@ export default function VideoCard({ video }: Props) {
   const navigate = useNavigate()
   const isSelected = useAppSelector((s) => s.videos.selectedVideoIds.includes(video.id))
   const collections = useAppSelector((s) => s.collections.collections)
+  const videoCollection = collections.find((c) => c.id === video.collectionId) ?? null
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [retrying, setRetrying] = useState(false)
@@ -136,6 +137,14 @@ export default function VideoCard({ video }: Props) {
         </p>
         {video.channel && (
           <p className="text-xs text-gray-500 mt-0.5 truncate">{video.channel}</p>
+        )}
+        {videoCollection && (
+          <span className="inline-flex items-center gap-1 text-xs text-purple-600 mt-0.5 truncate">
+            <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            {videoCollection.name}
+          </span>
         )}
         <div className="flex items-center justify-between mt-2">
           <StatusBadge status={video.status} />
