@@ -155,7 +155,7 @@ export default function Chat() {
               onChange={(e) => setInput(e.target.value)}
               placeholder={doneVideos.length === 0 ? 'Add videos to start chatting...' : 'Ask about your videos...'}
               disabled={streaming || doneVideos.length === 0}
-              className="flex-1 px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
             />
             <button
               type="submit"
