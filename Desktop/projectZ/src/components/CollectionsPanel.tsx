@@ -137,7 +137,7 @@ export default function CollectionsPanel({ showAssign = false }: Props) {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Collection name"
-            className="flex-1 min-w-0 px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-400"
+            className="flex-1 min-w-0 px-2 py-1 text-xs text-gray-900 placeholder:text-gray-400 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-400"
           />
           <button type="submit" className="text-xs text-purple-600 font-medium px-1">Add</button>
           <button type="button" onClick={() => setCreating(false)} className="text-xs text-gray-400 px-1">✕</button>
