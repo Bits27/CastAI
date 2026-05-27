@@ -89,13 +89,7 @@ export default function YouTubePlayer() {
     dispatch(clearSeekTarget())
   }, [seekTarget, dispatch])
 
-  if (!activeVideoId) {
-    return (
-      <div className="flex items-center justify-center h-40 bg-gray-900 rounded-lg text-gray-500 text-xs text-center px-4">
-        Select a video to play
-      </div>
-    )
-  }
+  if (!activeVideoId) return null
 
   return (
     <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
