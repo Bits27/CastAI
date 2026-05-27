@@ -16,6 +16,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { id } = req.query as { id: string }
 
+  if (req.method === 'GET') {
+    const chunks = await db
+      .select({
+        content: schema.chunks.content,
+        startTimeSeconds: schema.chunks.startTimeSeconds,
+        endTimeSeconds: schema.chunks.endTimeSeconds,
+      })
+      .from(schema.chunks)
+      .where(eq(schema.chunks.videoId, id))
+      .orderBy(schema.chunks.startTimeSeconds)
+    return res.status(200).json(chunks)
+  }
+
   if (req.method === 'DELETE') {
     const deleted = await db
       .delete(schema.videos)

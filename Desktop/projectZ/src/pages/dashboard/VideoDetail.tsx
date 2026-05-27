@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAppSelector, useAppDispatch } from '../../store/hooks'
-import { setActiveVideo } from '../../store/playerSlice'
+import { setActiveVideo, seekTo } from '../../store/playerSlice'
 import { fetchVideos } from '../../store/videosSlice'
 import YouTubePlayer from '../../components/YouTubePlayer'
+
+interface TranscriptChunk {
+  content: string
+  startTimeSeconds: number | null
+  endTimeSeconds: number | null
+}
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60)
@@ -24,10 +30,20 @@ export default function VideoDetail() {
   const navigate = useNavigate()
   const video = useAppSelector((s) => s.videos.videos.find((v) => v.id === id))
   const [reextracting, setReextracting] = useState(false)
+  const [chunks, setChunks] = useState<TranscriptChunk[]>([])
 
   useEffect(() => {
     if (video) dispatch(setActiveVideo(video.youtubeId))
   }, [video?.youtubeId])
+
+  useEffect(() => {
+    if (!id) return
+    getToken().then((token) =>
+      fetch(`/api/videos/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.json())
+        .then((data) => Array.isArray(data) && setChunks(data))
+    )
+  }, [id])
 
   async function handleReextract() {
     if (!id) return
@@ -174,23 +190,28 @@ export default function VideoDetail() {
       )}
 
       {/* Transcript */}
-      {video.transcriptText && (
+      {(chunks.length > 0 || video.transcriptText) && (
         <section className="p-5 rounded-xl border border-gray-200 bg-white">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Full Transcript</h2>
-          <div className="text-sm text-gray-600 leading-relaxed space-y-3 max-h-96 overflow-y-auto">
-            {video.transcriptText
-              .split(/(?<=[.!?])\s+/)
-              .reduce<string[]>((paras, sentence) => {
-                const last = paras[paras.length - 1] ?? ''
-                if (last.length < 400) {
-                  paras[paras.length - 1] = last ? `${last} ${sentence}` : sentence
-                } else {
-                  paras.push(sentence)
-                }
-                return paras
-              }, [''])
-              .map((para, idx) => <p key={idx}>{para}</p>)
-            }
+          <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+            {chunks.length > 0 ? chunks.map((chunk, i) => (
+              <div key={i} className="flex gap-3">
+                <button
+                  className="text-xs font-mono text-purple-500 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded flex-shrink-0 h-fit transition-colors"
+                  onClick={() => {
+                    if (chunk.startTimeSeconds != null) {
+                      dispatch(setActiveVideo(video.youtubeId))
+                      dispatch(seekTo(chunk.startTimeSeconds))
+                    }
+                  }}
+                >
+                  {formatTime(chunk.startTimeSeconds ?? 0)}
+                </button>
+                <p className="text-sm text-gray-600 leading-relaxed">{chunk.content}</p>
+              </div>
+            )) : (
+              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{video.transcriptText}</p>
+            )}
           </div>
         </section>
       )}
