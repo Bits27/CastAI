@@ -61,14 +61,24 @@ export default function Chat() {
               <p className="text-xs text-gray-400">
                 {selectedVideoIds.length === 0 ? 'All videos' : `${selectedVideoIds.length} selected`}
               </p>
-              {selectedVideoIds.length > 0 && (
-                <button
-                  onClick={() => dispatch(setSelectedVideoIds([]))}
-                  className="text-xs text-gray-400 hover:text-gray-600"
-                >
-                  Clear
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {selectedVideoIds.length < doneVideos.length && doneVideos.length > 0 && (
+                  <button
+                    onClick={() => dispatch(setSelectedVideoIds(doneVideos.map((v) => v.id)))}
+                    className="text-xs text-purple-600 hover:text-purple-800"
+                  >
+                    All
+                  </button>
+                )}
+                {selectedVideoIds.length > 0 && (
+                  <button
+                    onClick={() => dispatch(setSelectedVideoIds([]))}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
             {doneVideos.length === 0 ? (
               <p className="text-xs text-gray-400">No indexed videos yet. Add some in Library.</p>
