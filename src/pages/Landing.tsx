@@ -66,7 +66,7 @@ export default function Landing() {
       <section className="flex flex-col items-center text-center px-6 py-24 max-w-4xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-900/40 border border-purple-700/50 text-purple-300 text-sm mb-8">
           <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-          Powered by Claude & Gemini
+          Powered by Groq & Gemini
         </div>
         <h1 className="text-6xl font-bold tracking-tight mb-6 bg-gradient-to-br from-white to-gray-400 bg-clip-text text-transparent">
           Chat with your
@@ -112,7 +112,7 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-8 text-center text-sm text-gray-500">
-        &copy; 2026 CastAI. Built with React, Neon, and Claude.
+        &copy; 2026 CastAI. Built with React, Neon, and Groq.
       </footer>
     </div>
   )
