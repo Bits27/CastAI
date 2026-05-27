@@ -28,26 +28,6 @@ const initialState: ChatState = {
   error: null,
 }
 
-const CITATION_RE = /\[SOURCE:([^:]+):([^:]+):([^:]+):([^\]]+)\]/g
-
-function stripCitations(text: string): string {
-  return text.replace(CITATION_RE, '').replace(/[^\S\n]{2,}/g, ' ').trim()
-}
-
-function extractCitations(text: string): Citation[] {
-  const citations: Citation[] = []
-  let match: RegExpExecArray | null
-  const re = /\[SOURCE:([^:]+):([^:]+):([^:]+):([^\]]+)\]/g
-  while ((match = re.exec(text)) !== null) {
-    citations.push({
-      chunkId: match[1],
-      videoId: match[2],
-      videoTitle: match[3],
-      startSeconds: parseFloat(match[4]),
-    })
-  }
-  return citations
-}
 
 export const sendMessage = createAsyncThunk(
   'chat/sendMessage',
@@ -79,30 +59,31 @@ export const sendMessage = createAsyncThunk(
 
     const reader = res.body!.getReader()
     const decoder = new TextDecoder()
-    let accumulated = ''
+    let citations: Citation[] = []
 
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
       const chunk = decoder.decode(value, { stream: true })
-      // SSE lines: "data: <token>\n\n"
       const lines = chunk.split('\n')
       for (const line of lines) {
         if (line.startsWith('data: ')) {
           const data = line.slice(6)
           if (data === '[DONE]') continue
+          if (data.startsWith('[CITATIONS:')) {
+            try { citations = JSON.parse(data.slice(11, -1)) } catch { /* ignore */ }
+            continue
+          }
           if (data === '[ERROR]') {
             dispatch(chatSlice.actions.setError('Something went wrong. Please try again.'))
             return
           }
           const decoded = data.replace(/\\n/g, '\n')
-          accumulated += decoded
           dispatch(chatSlice.actions.appendToken({ id: assistantMsgId, token: decoded }))
         }
       }
     }
 
-    const citations = extractCitations(accumulated)
     dispatch(chatSlice.actions.finalizeMessage({ id: assistantMsgId, citations }))
   }
 )
@@ -143,7 +124,6 @@ const chatSlice = createSlice({
       state.streaming = false
       const msg = state.messages.find((m) => m.id === action.payload.id)
       if (msg) {
-        msg.content = stripCitations(msg.content)
         msg.citations = action.payload.citations
       }
     },
