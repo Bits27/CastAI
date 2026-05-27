@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { fetchVideos } from '../../store/videosSlice'
-import { fetchCollections } from '../../store/collectionsSlice'
+import { fetchCollections, setActiveCollection } from '../../store/collectionsSlice'
 import VideoCard from '../../components/VideoCard'
 import AddVideoInput from '../../components/AddVideoInput'
 import CollectionsPanel from '../../components/CollectionsPanel'
@@ -40,6 +40,9 @@ export default function Library() {
     prevStatusesRef.current = Object.fromEntries(videos.map((v) => [v.id, v.status]))
   }, [videos])
 
+  const { collections } = useAppSelector((s) => s.collections)
+  const activeCollection = collections.find((c) => c.id === activeCollectionId) ?? null
+
   const scoped = activeCollectionId
     ? videos.filter((v) => v.collectionId === activeCollectionId)
     : videos
@@ -65,25 +68,57 @@ export default function Library() {
       {/* Main content */}
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-6 p-6 max-w-5xl mx-auto w-full">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Library</h1>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  {scoped.length} video{scoped.length !== 1 ? 's' : ''}
-                  {activeCollectionId ? ' in collection' : ' indexed'}
-                </p>
+
+          {/* Collection header */}
+          {activeCollection ? (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => dispatch(setActiveCollection(null))}
+                  className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  All videos
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{activeCollection.name}</h1>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {scoped.length} video{scoped.length !== 1 ? 's' : ''} in this collection
+                  </p>
+                </div>
               </div>
             </div>
-            <AddVideoInput />
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Library</h1>
+                <p className="text-sm text-gray-500 mt-0.5">{videos.length} video{videos.length !== 1 ? 's' : ''} indexed</p>
+              </div>
+              <AddVideoInput />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by title or channel..."
+                className="w-full sm:w-80 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+          )}
+
+          {/* Collection search (only when in a collection) */}
+          {activeCollection && (
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by title or channel..."
+              placeholder={`Search in ${activeCollection.name}...`}
               className="w-full sm:w-80 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-          </div>
+          )}
 
           {status === 'loading' && videos.length === 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -107,7 +142,7 @@ export default function Library() {
                 {search
                   ? 'Try a different search term'
                   : activeCollectionId
-                  ? 'Hover a collection and click + to assign videos'
+                  ? 'Click + on the collection to assign videos'
                   : 'Paste a YouTube link above to get started'}
               </p>
             </div>
