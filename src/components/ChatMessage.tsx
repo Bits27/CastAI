@@ -15,36 +15,27 @@ function formatTime(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-function CitationChip({ citation, index }: { citation: Citation; index: number }) {
+function CitationChip({ citation }: { citation: Citation }) {
   const dispatch = useAppDispatch()
   const videos = useAppSelector((s) => s.videos.videos)
 
   function handleClick() {
     const matched = videos.find((v) => v.id === citation.videoId)
-    if (matched) {
-      dispatch(setActiveVideo(matched.youtubeId))
-    }
+    if (matched) dispatch(setActiveVideo(matched.youtubeId))
     dispatch(seekTo(citation.startSeconds))
   }
 
   return (
     <button
       onClick={handleClick}
-      className="flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg bg-purple-50 hover:bg-purple-100 border border-purple-100 hover:border-purple-200 transition-colors group"
-      title="Click to jump to this moment"
+      className="inline-flex items-center gap-1.5 text-xs bg-white border border-gray-200 hover:border-purple-400 hover:bg-purple-50 text-gray-700 hover:text-purple-700 px-2.5 py-1 rounded-full transition-colors"
+      title={`Jump to ${formatTime(citation.startSeconds)}`}
     >
-      <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-xs font-bold flex-shrink-0 flex items-center justify-center">
-        {index + 1}
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-gray-800 truncate">{citation.videoTitle}</p>
-      </div>
-      <div className="flex items-center gap-1 flex-shrink-0 bg-purple-600 text-white text-xs font-mono px-2 py-0.5 rounded-md">
-        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-        </svg>
-        {formatTime(citation.startSeconds)}
-      </div>
+      <svg className="w-3 h-3 text-purple-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+      </svg>
+      <span className="truncate max-w-[120px]">{citation.videoTitle}</span>
+      <span className="font-mono text-purple-600 font-medium flex-shrink-0">{formatTime(citation.startSeconds)}</span>
     </button>
   )
 }
@@ -83,12 +74,9 @@ export default function ChatMessage({ message }: Props) {
           )}
         </div>
         {message.citations.length > 0 && (
-          <div className="mt-3 space-y-1.5">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1">
-              Sources
-            </p>
+          <div className="flex flex-wrap gap-1.5 mt-2">
             {message.citations.map((citation, i) => (
-              <CitationChip key={i} citation={citation} index={i} />
+              <CitationChip key={i} citation={citation} />
             ))}
           </div>
         )}
