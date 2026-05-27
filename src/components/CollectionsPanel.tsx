@@ -99,7 +99,7 @@ export default function CollectionsPanel({ showAssign = false }: Props) {
 
             {/* Assign videos dropdown */}
             {showAssign && isExpanded && (
-              <div className="ml-5 mt-1 space-y-0.5">
+              <div className="ml-2 mt-1 space-y-1">
                 {videos.filter((v) => v.status === 'done').map((v) => {
                   const inThisCol = v.collectionId === col.id
                   return (
@@ -108,14 +108,19 @@ export default function CollectionsPanel({ showAssign = false }: Props) {
                       onClick={() =>
                         dispatch(assignVideoCollection({ id: v.id, collectionId: inThisCol ? null : col.id }))
                       }
-                      className={`w-full flex items-center gap-2 px-2 py-1 rounded text-xs text-left transition-colors ${
-                        inThisCol ? 'bg-purple-100 text-purple-700' : 'text-gray-500 hover:bg-gray-50'
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
+                        inThisCol ? 'bg-purple-50 border border-purple-200' : 'hover:bg-gray-50 border border-transparent'
                       }`}
                     >
-                      <div className={`w-2.5 h-2.5 rounded-sm border flex-shrink-0 ${
+                      {v.thumbnailUrl ? (
+                        <img src={v.thumbnailUrl} alt="" className="w-10 h-6 object-cover rounded flex-shrink-0" />
+                      ) : (
+                        <div className="w-10 h-6 bg-gray-100 rounded flex-shrink-0" />
+                      )}
+                      <span className="truncate text-xs text-gray-700 flex-1">{v.title ?? v.youtubeId}</span>
+                      <div className={`w-3 h-3 rounded-sm border flex-shrink-0 ${
                         inThisCol ? 'bg-purple-500 border-purple-500' : 'border-gray-300'
                       }`} />
-                      <span className="truncate">{v.title ?? v.youtubeId}</span>
                     </button>
                   )
                 })}
