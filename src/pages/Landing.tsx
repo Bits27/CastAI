@@ -117,6 +117,7 @@ export default function Landing() {
               Go to Dashboard
             </button>
           </SignedIn>
+        </div>
       </section>
 
       {/* How it works */}
