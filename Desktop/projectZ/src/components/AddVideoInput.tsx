@@ -2,7 +2,12 @@ import { useState } from 'react'
 import { useAppDispatch } from '../store/hooks'
 import { ingestVideo } from '../store/videosSlice'
 
-export default function AddVideoInput() {
+interface Props {
+  onSuccess?: (videoId: string) => void
+  placeholder?: string
+}
+
+export default function AddVideoInput({ onSuccess, placeholder }: Props) {
   const dispatch = useAppDispatch()
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
@@ -14,8 +19,9 @@ export default function AddVideoInput() {
     setError('')
     setLoading(true)
     try {
-      await dispatch(ingestVideo(url.trim())).unwrap()
+      const video = await dispatch(ingestVideo(url.trim())).unwrap()
       setUrl('')
+      onSuccess?.(video.id)
     } catch (err: any) {
       setError(err?.message ?? 'Failed to add video')
     } finally {
@@ -30,7 +36,7 @@ export default function AddVideoInput() {
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://youtube.com/watch?v=..."
+          placeholder={placeholder ?? 'https://youtube.com/watch?v=...'}
           className="flex-1 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           disabled={loading}
         />
