@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { fetchVideos } from '../../store/videosSlice'
 import { fetchCollections } from '../../store/collectionsSlice'
@@ -11,6 +11,8 @@ export default function Library() {
   const { videos, status } = useAppSelector((s) => s.videos)
   const { activeCollectionId } = useAppSelector((s) => s.collections)
   const [search, setSearch] = useState('')
+  const [toasts, setToasts] = useState<string[]>([])
+  const prevStatusesRef = useRef<Record<string, string>>({})
 
   useEffect(() => {
     dispatch(fetchVideos())
@@ -25,6 +27,19 @@ export default function Library() {
     return () => clearInterval(timer)
   }, [videos, dispatch])
 
+  // Toast when a video finishes processing
+  useEffect(() => {
+    const prev = prevStatusesRef.current
+    videos.forEach((v) => {
+      if ((prev[v.id] === 'processing' || prev[v.id] === 'queued') && v.status === 'done') {
+        const msg = `"${v.title ?? v.youtubeId}" is ready`
+        setToasts((t) => [...t, msg])
+        setTimeout(() => setToasts((t) => t.filter((x) => x !== msg)), 4000)
+      }
+    })
+    prevStatusesRef.current = Object.fromEntries(videos.map((v) => [v.id, v.status]))
+  }, [videos])
+
   const scoped = activeCollectionId
     ? videos.filter((v) => v.collectionId === activeCollectionId)
     : videos
@@ -36,7 +51,7 @@ export default function Library() {
   )
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full overflow-hidden relative">
       {/* Collections sidebar */}
       <aside className="w-52 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col">
         <div className="p-4 border-b border-gray-100">
@@ -61,15 +76,13 @@ export default function Library() {
               </div>
             </div>
             <AddVideoInput />
-            {scoped.length > 6 && (
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by title or channel..."
-                className="w-full sm:w-80 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            )}
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by title or channel..."
+              className="w-full sm:w-80 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
           </div>
 
           {status === 'loading' && videos.length === 0 ? (
@@ -107,6 +120,18 @@ export default function Library() {
           )}
         </div>
       </div>
+
+      {/* Toast notifications */}
+      {toasts.length > 0 && (
+        <div className="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
+          {toasts.map((msg, i) => (
+            <div key={i} className="flex items-center gap-2 px-4 py-3 bg-gray-900 text-white text-sm rounded-xl shadow-lg animate-fade-in">
+              <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+              {msg}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

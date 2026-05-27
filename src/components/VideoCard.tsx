@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Video } from '../store/videosSlice'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
-import { toggleVideoSelected, deleteVideo } from '../store/videosSlice'
+import { toggleVideoSelected, deleteVideo, ingestVideo } from '../store/videosSlice'
 import { setActiveVideo } from '../store/playerSlice'
 
 interface Props {
@@ -49,12 +49,21 @@ export default function VideoCard({ video }: Props) {
   const isSelected = useAppSelector((s) => s.videos.selectedVideoIds.includes(video.id))
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [retrying, setRetrying] = useState(false)
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
     if (!confirming) { setConfirming(true); return }
     setDeleting(true)
     await dispatch(deleteVideo(video.id))
+  }
+
+  async function handleRetry(e: React.MouseEvent) {
+    e.stopPropagation()
+    setRetrying(true)
+    await dispatch(deleteVideo(video.id))
+    await dispatch(ingestVideo(`https://youtube.com/watch?v=${video.youtubeId}`))
+    setRetrying(false)
   }
 
   return (
@@ -128,6 +137,15 @@ export default function VideoCard({ video }: Props) {
         <div className="flex items-center justify-between mt-2">
           <StatusBadge status={video.status} />
           <div className="flex items-center gap-2">
+            {video.status === 'failed' && (
+              <button
+                className="text-xs text-amber-600 hover:text-amber-800 font-medium disabled:opacity-50"
+                disabled={retrying}
+                onClick={handleRetry}
+              >
+                {retrying ? 'Retrying...' : 'Retry'}
+              </button>
+            )}
             {video.status === 'done' && (
               <button
                 className="text-xs text-purple-600 hover:text-purple-800 font-medium"
