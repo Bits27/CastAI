@@ -4,7 +4,6 @@ import { sendMessage, clearChat } from '../../store/chatSlice'
 import { fetchVideos, toggleVideoSelected, setSelectedVideoIds } from '../../store/videosSlice'
 import { fetchCollections } from '../../store/collectionsSlice'
 import ChatMessageComponent from '../../components/ChatMessage'
-import YouTubePlayer from '../../components/YouTubePlayer'
 import CollectionsPanel from '../../components/CollectionsPanel'
 
 export default function Chat() {
@@ -45,11 +44,6 @@ export default function Chat() {
     <div className="flex h-full overflow-hidden">
       {/* Left sidebar */}
       <aside className="w-72 flex-shrink-0 border-r border-gray-200 flex flex-col bg-gray-50">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Player</h2>
-          <YouTubePlayer />
-        </div>
-
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Collection filter */}
           <div>
