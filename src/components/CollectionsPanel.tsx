@@ -56,12 +56,11 @@ export default function CollectionsPanel({ showAssign = false }: Props) {
         return (
           <div key={col.id}>
             <div
-              className={`group w-full flex flex-col px-2 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              className={`group w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                 isActive ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-100'
               }`}
               onClick={() => dispatch(setActiveCollection(isActive ? null : col.id))}
             >
-              <div className="flex items-center gap-2">
                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
@@ -69,7 +68,6 @@ export default function CollectionsPanel({ showAssign = false }: Props) {
                 {colVideos.length > 0 && (
                   <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">{colVideos.length}</span>
                 )}
-
               {showAssign && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setExpanded(isExpanded ? null : col.id) }}
@@ -96,21 +94,6 @@ export default function CollectionsPanel({ showAssign = false }: Props) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              </div>
-              {colVideos.length > 0 && (
-                <div className="flex gap-1 mt-1.5 ml-5">
-                  {colVideos.slice(0, 3).map((v) => (
-                    v.thumbnailUrl
-                      ? <img key={v.id} src={v.thumbnailUrl} alt="" className="w-12 h-7 object-cover rounded" />
-                      : <div key={v.id} className="w-12 h-7 bg-gray-200 rounded" />
-                  ))}
-                  {colVideos.length > 3 && (
-                    <div className="w-12 h-7 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">
-                      +{colVideos.length - 3}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Assign videos dropdown */}

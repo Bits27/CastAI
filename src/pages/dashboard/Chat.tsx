@@ -36,7 +36,10 @@ export default function Chat() {
     }))
   }
 
-  const doneVideos = videos.filter((v) => v.status === 'done')
+  const doneVideos = videos.filter((v) =>
+    v.status === 'done' &&
+    (!activeCollectionId || v.collectionId === activeCollectionId)
+  )
 
   return (
     <div className="flex h-full overflow-hidden">
