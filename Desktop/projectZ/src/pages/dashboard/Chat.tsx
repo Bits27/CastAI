@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { sendMessage, clearChat } from '../../store/chatSlice'
-import { fetchVideos, toggleVideoSelected } from '../../store/videosSlice'
+import { fetchVideos, toggleVideoSelected, setSelectedVideoIds } from '../../store/videosSlice'
 import { fetchCollections } from '../../store/collectionsSlice'
 import ChatMessageComponent from '../../components/ChatMessage'
 import YouTubePlayer from '../../components/YouTubePlayer'
@@ -57,9 +57,19 @@ export default function Chat() {
           {/* Individual video scope */}
           <div>
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Videos</h2>
-            <p className="text-xs text-gray-400 mb-2">
-              {selectedVideoIds.length === 0 ? 'All videos' : `${selectedVideoIds.length} selected`}
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-gray-400">
+                {selectedVideoIds.length === 0 ? 'All videos' : `${selectedVideoIds.length} selected`}
+              </p>
+              {selectedVideoIds.length > 0 && (
+                <button
+                  onClick={() => dispatch(setSelectedVideoIds([]))}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
             {doneVideos.length === 0 ? (
               <p className="text-xs text-gray-400">No indexed videos yet. Add some in Library.</p>
             ) : (
@@ -148,7 +158,7 @@ export default function Chat() {
         </div>
 
         <form onSubmit={handleSend} className="px-6 py-4 border-t border-gray-200 bg-white">
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
             <input
               type="text"
               value={input}
@@ -174,6 +184,7 @@ export default function Chat() {
               )}
             </button>
           </div>
+          <p className="text-xs text-gray-400 mt-1.5">Press Enter to send</p>
         </form>
       </div>
     </div>

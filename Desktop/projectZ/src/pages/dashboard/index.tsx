@@ -1,12 +1,15 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { UserButton } from '@clerk/clerk-react'
 
-const navItems = [
-  { to: '/dashboard/library', label: 'Library', icon: '📚' },
-  { to: '/dashboard/chat', label: 'Chat', icon: '💬' },
-]
-
 export default function Dashboard() {
+  const location = useLocation()
+  const isOnVideo = location.pathname.startsWith('/dashboard/video/')
+
+  const navItems = [
+    { to: '/dashboard/library', label: 'Library', icon: '📚', active: isOnVideo || location.pathname.startsWith('/dashboard/library') },
+    { to: '/dashboard/chat', label: 'Chat', icon: '💬', active: location.pathname.startsWith('/dashboard/chat') },
+  ]
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Sidebar nav */}
@@ -23,9 +26,9 @@ export default function Dashboard() {
             <NavLink
               key={item.to}
               to={item.to}
-              className={({ isActive }) =>
+              className={() =>
                 `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
+                  item.active
                     ? 'bg-purple-50 text-purple-700'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`

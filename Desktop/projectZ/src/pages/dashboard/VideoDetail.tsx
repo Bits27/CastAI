@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useAppSelector, useAppDispatch } from '../../store/hooks'
 import { setActiveVideo } from '../../store/playerSlice'
+import { fetchVideos } from '../../store/videosSlice'
 import YouTubePlayer from '../../components/YouTubePlayer'
 
 function formatTime(seconds: number): string {
@@ -10,14 +11,38 @@ function formatTime(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
+async function getToken(): Promise<string> {
+  if (typeof window !== 'undefined' && (window as any).__clerkGetToken) {
+    return (window as any).__clerkGetToken()
+  }
+  return ''
+}
+
 export default function VideoDetail() {
   const { id } = useParams<{ id: string }>()
   const dispatch = useAppDispatch()
+  const navigate = useNavigate()
   const video = useAppSelector((s) => s.videos.videos.find((v) => v.id === id))
+  const [reextracting, setReextracting] = useState(false)
 
   useEffect(() => {
     if (video) dispatch(setActiveVideo(video.youtubeId))
   }, [video?.youtubeId])
+
+  async function handleReextract() {
+    if (!id) return
+    setReextracting(true)
+    try {
+      const token = await getToken()
+      await fetch(`/api/videos/${id}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      await dispatch(fetchVideos())
+    } finally {
+      setReextracting(false)
+    }
+  }
 
   if (!video) {
     return (
@@ -33,15 +58,26 @@ export default function VideoDetail() {
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       {/* Header */}
       <div>
-        <button
-          onClick={() => dispatch(setActiveVideo(video.youtubeId))}
-          className="text-sm text-purple-600 hover:text-purple-800 mb-4 inline-flex items-center gap-1"
-        >
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-          </svg>
-          Play in sidebar
-        </button>
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-sm text-gray-500 hover:text-gray-800 inline-flex items-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+          <button
+            onClick={() => dispatch(setActiveVideo(video.youtubeId))}
+            className="text-sm text-purple-600 hover:text-purple-800 inline-flex items-center gap-1"
+          >
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+            </svg>
+            Play in sidebar
+          </button>
+        </div>
         <h1 className="text-2xl font-bold text-gray-900">{video.title}</h1>
         <p className="text-sm text-gray-500 mt-1">{video.channel}</p>
       </div>
@@ -50,6 +86,20 @@ export default function VideoDetail() {
       <div className="aspect-video rounded-xl overflow-hidden bg-black">
         <YouTubePlayer />
       </div>
+
+      {/* Re-extract insights if missing */}
+      {!insights && (
+        <div className="flex items-center justify-between p-4 rounded-xl border border-amber-200 bg-amber-50">
+          <p className="text-sm text-amber-700">Insights were not extracted for this video.</p>
+          <button
+            onClick={handleReextract}
+            disabled={reextracting}
+            className="text-sm font-medium text-amber-700 hover:text-amber-900 disabled:opacity-50"
+          >
+            {reextracting ? 'Extracting...' : 'Extract now'}
+          </button>
+        </div>
+      )}
 
       {/* Insights */}
       {insights && (
@@ -127,7 +177,21 @@ export default function VideoDetail() {
       {video.transcriptText && (
         <section className="p-5 rounded-xl border border-gray-200 bg-white">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Full Transcript</h2>
-          <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{video.transcriptText}</p>
+          <div className="text-sm text-gray-600 leading-relaxed space-y-3 max-h-96 overflow-y-auto">
+            {video.transcriptText
+              .split(/(?<=[.!?])\s+/)
+              .reduce<string[]>((paras, sentence) => {
+                const last = paras[paras.length - 1] ?? ''
+                if (last.length < 400) {
+                  paras[paras.length - 1] = last ? `${last} ${sentence}` : sentence
+                } else {
+                  paras.push(sentence)
+                }
+                return paras
+              }, [''])
+              .map((para, idx) => <p key={idx}>{para}</p>)
+            }
+          </div>
         </section>
       )}
     </div>
