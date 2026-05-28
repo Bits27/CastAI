@@ -74,7 +74,7 @@ export default function VideoDetail() {
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       {/* Header */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <button
             onClick={() => navigate(-1)}
             className="text-sm text-gray-500 hover:text-gray-800 inline-flex items-center gap-1"
@@ -83,15 +83,6 @@ export default function VideoDetail() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back
-          </button>
-          <button
-            onClick={() => dispatch(setActiveVideo(video.youtubeId))}
-            className="text-sm text-purple-600 hover:text-purple-800 inline-flex items-center gap-1"
-          >
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-            </svg>
-            Play in sidebar
           </button>
         </div>
         <h1 className="text-2xl font-bold text-gray-900">{video.title}</h1>
