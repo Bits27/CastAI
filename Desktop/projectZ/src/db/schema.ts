@@ -47,8 +47,14 @@ export const videoInsights = pgTable('video_insights', {
   topics: jsonb('topics'),
 })
 
+export const videoCollections = pgTable('video_collections', {
+  videoId: uuid('video_id').notNull().references(() => videos.id, { onDelete: 'cascade' }),
+  collectionId: uuid('collection_id').notNull().references(() => collections.id, { onDelete: 'cascade' }),
+})
+
 export type User = typeof users.$inferSelect
 export type Collection = typeof collections.$inferSelect
 export type Video = typeof videos.$inferSelect
 export type Chunk = typeof chunks.$inferSelect
 export type VideoInsights = typeof videoInsights.$inferSelect
+export type VideoCollection = typeof videoCollections.$inferSelect

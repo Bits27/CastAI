@@ -35,14 +35,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!query) return res.status(400).json({ error: 'query is required' })
 
-  // Resolve collection -> video IDs
+  // Resolve collection -> video IDs via junction table
   let resolvedVideoIds = [...videoIds]
   if (collectionId) {
     const collVideos = await db
-      .select({ id: schema.videos.id })
-      .from(schema.videos)
-      .where(eq(schema.videos.collectionId, collectionId))
-    resolvedVideoIds = [...new Set([...resolvedVideoIds, ...collVideos.map((v) => v.id)])]
+      .select({ videoId: schema.videoCollections.videoId })
+      .from(schema.videoCollections)
+      .where(eq(schema.videoCollections.collectionId, collectionId))
+    resolvedVideoIds = [...new Set([...resolvedVideoIds, ...collVideos.map((v) => v.videoId)])]
   }
 
   if (resolvedVideoIds.length === 0) {

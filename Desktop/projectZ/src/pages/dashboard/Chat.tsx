@@ -37,7 +37,7 @@ export default function Chat() {
 
   const doneVideos = videos.filter((v) =>
     v.status === 'done' &&
-    (!activeCollectionId || v.collectionId === activeCollectionId)
+    (!activeCollectionId || (v.collectionIds ?? []).includes(activeCollectionId))
   )
 
   return (

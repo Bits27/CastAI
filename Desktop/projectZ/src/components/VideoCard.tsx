@@ -46,7 +46,7 @@ export default function VideoCard({ video }: Props) {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const collections = useAppSelector((s) => s.collections.collections)
-  const videoCollection = collections.find((c) => c.id === video.collectionId) ?? null
+  const videoCollections = collections.filter((c) => (video.collectionIds ?? []).includes(c.id))
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [retrying, setRetrying] = useState(false)
@@ -128,13 +128,17 @@ export default function VideoCard({ video }: Props) {
           {video.channel && (
             <p className="text-xs text-gray-500 mt-0.5 truncate">{video.channel}</p>
           )}
-          {videoCollection && (
-            <span className="inline-flex items-center gap-1 text-xs text-purple-600 mt-0.5 truncate">
-              <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-              {videoCollection.name}
-            </span>
+          {videoCollections.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {videoCollections.map((c) => (
+                <span key={c.id} className="inline-flex items-center gap-1 text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-full">
+                  <svg className="w-2.5 h-2.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                  {c.name}
+                </span>
+              ))}
+            </div>
           )}
         </div>
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
@@ -161,30 +165,34 @@ export default function VideoCard({ video }: Props) {
               </button>
               {showCollectionPicker && (
                 <div
-                  className="absolute bottom-6 right-0 z-20 w-44 bg-white rounded-xl border border-gray-200 shadow-lg py-1"
+                  className="absolute bottom-6 right-0 z-20 w-48 bg-white rounded-xl border border-gray-200 shadow-lg py-1"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <p className="text-xs text-gray-400 px-3 py-1.5 border-b border-gray-100">Add to collection</p>
+                  <p className="text-xs text-gray-400 px-3 py-1.5 border-b border-gray-100">Collections</p>
                   {collections.length === 0 && (
                     <p className="text-xs text-gray-400 px-3 py-2">No collections yet</p>
                   )}
-                  {video.collectionId && (
-                    <button
-                      onClick={() => { dispatch(assignVideoCollection({ id: video.id, collectionId: null })); setShowCollectionPicker(false) }}
-                      className="w-full text-left text-xs px-3 py-1.5 text-red-500 hover:bg-red-50"
-                    >
-                      Remove from collection
-                    </button>
-                  )}
-                  {collections.map((col) => (
-                    <button
-                      key={col.id}
-                      onClick={() => { dispatch(assignVideoCollection({ id: video.id, collectionId: col.id })); setShowCollectionPicker(false) }}
-                      className={`w-full text-left text-xs px-3 py-1.5 hover:bg-purple-50 hover:text-purple-700 ${video.collectionId === col.id ? 'text-purple-600 font-medium' : 'text-gray-700'}`}
-                    >
-                      {video.collectionId === col.id ? '✓ ' : ''}{col.name}
-                    </button>
-                  ))}
+                  {collections.map((col) => {
+                    const current = video.collectionIds ?? []
+                    const inCol = current.includes(col.id)
+                    return (
+                      <button
+                        key={col.id}
+                        onClick={() => {
+                          const newIds = inCol
+                            ? current.filter((id) => id !== col.id)
+                            : [...current, col.id]
+                          dispatch(assignVideoCollection({ id: video.id, collectionIds: newIds }))
+                        }}
+                        className="w-full flex items-center gap-2 text-left text-xs px-3 py-1.5 hover:bg-purple-50 hover:text-purple-700 text-gray-700"
+                      >
+                        <div className={`w-3.5 h-3.5 rounded border-2 flex-shrink-0 flex items-center justify-center ${inCol ? 'bg-purple-600 border-purple-600' : 'border-gray-300'}`}>
+                          {inCol && <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                        </div>
+                        {col.name}
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </div>

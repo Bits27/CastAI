@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { requireAuth } from '../_lib/auth.js'
 import { db, schema } from '../_lib/db.js'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, inArray } from 'drizzle-orm'
 import Groq from 'groq-sdk'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
@@ -40,15 +40,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'PATCH') {
-    const { collectionId } = req.body as { collectionId: string | null }
-    const updated = await db
-      .update(schema.videos)
-      .set({ collectionId: collectionId ?? null })
-      .where(and(eq(schema.videos.id, id), eq(schema.videos.userId, userId)))
-      .returning()
+    const { collectionIds } = req.body as { collectionIds: string[] }
 
-    if (updated.length === 0) return res.status(404).json({ error: 'Not found' })
-    return res.status(200).json(updated[0])
+    // Verify video belongs to user
+    const [video] = await db.select({ id: schema.videos.id })
+      .from(schema.videos)
+      .where(and(eq(schema.videos.id, id), eq(schema.videos.userId, userId)))
+    if (!video) return res.status(404).json({ error: 'Not found' })
+
+    // Replace junction table rows for this video
+    await db.delete(schema.videoCollections).where(eq(schema.videoCollections.videoId, id))
+    if (collectionIds.length > 0) {
+      await db.insert(schema.videoCollections).values(
+        collectionIds.map((cid) => ({ videoId: id, collectionId: cid }))
+      )
+    }
+
+    const vcRows = await db
+      .select({ collectionId: schema.videoCollections.collectionId })
+      .from(schema.videoCollections)
+      .where(eq(schema.videoCollections.videoId, id))
+
+    return res.status(200).json({ id, collectionIds: vcRows.map((r) => r.collectionId) })
   }
 
   if (req.method === 'POST') {
