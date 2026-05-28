@@ -57,13 +57,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!video) return res.status(404).json({ error: 'Not found' })
     if (!video.transcriptText) return res.status(422).json({ error: 'No transcript available' })
 
-    const insightPrompt = `You are an AI assistant. Analyze the following transcript and return ONLY valid JSON with these keys:
+    const insightPrompt = `You are an AI assistant. Analyze the following video and return ONLY valid JSON with these keys:
 - clean_title: string (4-7 word neutral descriptive title of what this video actually covers, no clickbait, no sensationalism)
 - summary: string (2-3 sentence overview)
-- speakers: string[] (detected speaker names or ["Unknown Speaker"] if none detected)
+- speakers: string[] (names of people speaking or presenting — infer from: names mentioned in the transcript, the video title, or the channel name; if it's a podcast or interview also include the host; only use "Unknown Speaker" as a last resort if truly no name can be inferred)
 - key_claims: { claim: string, timestamp: number }[] (important claims with approximate timestamp in seconds)
 - top_quotes: string[] (5 most memorable quotes)
 - topics: string[] (main topics covered)
+
+Video title: ${video.title ?? ''}
+Channel: ${video.channel ?? ''}
 
 Transcript:
 ${video.transcriptText.slice(0, 50000)}
