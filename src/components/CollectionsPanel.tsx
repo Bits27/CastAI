@@ -49,7 +49,7 @@ export default function CollectionsPanel({ showAssign = false }: Props) {
 
       {/* Collection rows */}
       {collections.map((col) => {
-        const colVideos = videos.filter((v) => v.collectionId === col.id)
+        const colVideos = videos.filter((v) => (v.collectionIds ?? []).includes(col.id))
         const isActive = activeCollectionId === col.id
         const isExpanded = expanded === col.id
 
@@ -100,13 +100,17 @@ export default function CollectionsPanel({ showAssign = false }: Props) {
             {showAssign && isExpanded && (
               <div className="ml-2 mt-1 space-y-1">
                 {videos.filter((v) => v.status === 'done').map((v) => {
-                  const inThisCol = v.collectionId === col.id
+                  const current = v.collectionIds ?? []
+                  const inThisCol = current.includes(col.id)
                   return (
                     <button
                       key={v.id}
-                      onClick={() =>
-                        dispatch(assignVideoCollection({ id: v.id, collectionId: inThisCol ? null : col.id }))
-                      }
+                      onClick={() => {
+                        const newIds = inThisCol
+                          ? current.filter((id) => id !== col.id)
+                          : [...current, col.id]
+                        dispatch(assignVideoCollection({ id: v.id, collectionIds: newIds }))
+                      }}
                       className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
                         inThisCol ? 'bg-purple-50 border border-purple-200' : 'hover:bg-gray-50 border border-transparent'
                       }`}

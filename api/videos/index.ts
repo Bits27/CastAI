@@ -19,14 +19,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .where(eq(schema.videos.userId, userId))
     .orderBy(desc(schema.videos.createdAt))
 
-  // Attach insights
+  // Attach insights and collectionIds from junction table
   const withInsights = await Promise.all(
     videos.map(async (video) => {
       const [insights] = await db
         .select()
         .from(schema.videoInsights)
         .where(eq(schema.videoInsights.videoId, video.id))
-      return { ...video, insights: insights ?? null }
+      const vcRows = await db
+        .select({ collectionId: schema.videoCollections.collectionId })
+        .from(schema.videoCollections)
+        .where(eq(schema.videoCollections.videoId, video.id))
+      return {
+        ...video,
+        insights: insights ?? null,
+        collectionIds: vcRows.map((r) => r.collectionId),
+      }
     })
   )
 

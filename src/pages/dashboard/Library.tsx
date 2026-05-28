@@ -45,7 +45,7 @@ export default function Library() {
   const activeCollection = collections.find((c) => c.id === activeCollectionId) ?? null
 
   const scoped = activeCollectionId
-    ? videos.filter((v) => v.collectionId === activeCollectionId)
+    ? videos.filter((v) => (v.collectionIds ?? []).includes(activeCollectionId))
     : videos
 
   const filtered = scoped.filter((v) =>
@@ -91,7 +91,7 @@ export default function Library() {
               <AddVideoInput
                 placeholder="Add a video directly to this collection..."
                 onSuccess={(videoId) => {
-                  dispatch(assignVideoCollection({ id: videoId, collectionId: activeCollectionId! }))
+                  dispatch(assignVideoCollection({ id: videoId, collectionIds: [activeCollectionId!] }))
                 }}
               />
               <input

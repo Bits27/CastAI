@@ -13,6 +13,7 @@ export interface Video {
   id: string
   userId: string
   collectionId: string | null
+  collectionIds: string[]
   youtubeId: string
   title: string | null
   channel: string | null
@@ -71,15 +72,15 @@ export const deleteVideo = createAsyncThunk('videos/delete', async (id: string) 
 
 export const assignVideoCollection = createAsyncThunk(
   'videos/assignCollection',
-  async ({ id, collectionId }: { id: string; collectionId: string | null }) => {
+  async ({ id, collectionIds }: { id: string; collectionIds: string[] }) => {
     const token = await getClerkToken()
     const res = await fetch(`/api/videos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ collectionId }),
+      body: JSON.stringify({ collectionIds }),
     })
     if (!res.ok) throw new Error('Failed to update video')
-    return res.json() as Promise<Video>
+    return res.json() as Promise<{ id: string; collectionIds: string[] }>
   }
 )
 
@@ -136,7 +137,7 @@ const videosSlice = createSlice({
       })
       .addCase(assignVideoCollection.fulfilled, (state, action) => {
         const idx = state.videos.findIndex((v) => v.id === action.payload.id)
-        if (idx >= 0) state.videos[idx] = { ...state.videos[idx], ...action.payload }
+        if (idx >= 0) state.videos[idx].collectionIds = action.payload.collectionIds
       })
   },
 })
