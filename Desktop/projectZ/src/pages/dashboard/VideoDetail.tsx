@@ -12,9 +12,45 @@ interface TranscriptChunk {
 }
 
 function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60)
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
   const s = Math.round(seconds % 60)
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   return `${m}:${String(s).padStart(2, '0')}`
+}
+
+interface DisplaySegment {
+  content: string
+  startSeconds: number
+}
+
+function splitInto15Sec(chunks: TranscriptChunk[]): DisplaySegment[] {
+  const INTERVAL = 15
+  const segments: DisplaySegment[] = []
+
+  for (const chunk of chunks) {
+    const start = chunk.startTimeSeconds ?? 0
+    const end = chunk.endTimeSeconds ?? start
+    const duration = Math.max(end - start, 0)
+    const words = chunk.content.trim().split(/\s+/)
+
+    if (duration <= INTERVAL || words.length === 0) {
+      segments.push({ content: chunk.content, startSeconds: start })
+      continue
+    }
+
+    const numSeg = Math.ceil(duration / INTERVAL)
+    const wordsPerSeg = words.length / numSeg
+
+    for (let i = 0; i < numSeg; i++) {
+      const wStart = Math.floor(i * wordsPerSeg)
+      const wEnd = Math.floor((i + 1) * wordsPerSeg)
+      const text = words.slice(wStart, wEnd).join(' ')
+      if (text) segments.push({ content: text, startSeconds: start + i * INTERVAL })
+    }
+  }
+
+  return segments
 }
 
 async function getToken(): Promise<string> {
@@ -32,6 +68,7 @@ export default function VideoDetail() {
   const video = videos.find((v) => v.id === id)
   const [reextracting, setReextracting] = useState(false)
   const [chunks, setChunks] = useState<TranscriptChunk[]>([])
+  const [transcriptSearch, setTranscriptSearch] = useState('')
 
   useEffect(() => {
     if (videos.length === 0) dispatch(fetchVideos())
@@ -200,31 +237,68 @@ export default function VideoDetail() {
       )}
 
       {/* Transcript */}
-      {(chunks.length > 0 || video.transcriptText) && (
+      {(chunks.length > 0 || video.transcriptText) && (() => {
+        const segments = chunks.length > 0 ? splitInto15Sec(chunks) : null
+        const q = transcriptSearch.toLowerCase()
+        const filtered = segments
+          ? (q ? segments.filter((s) => s.content.toLowerCase().includes(q)) : segments)
+          : null
+
+        return (
         <section className="p-5 rounded-xl border border-gray-200 bg-white">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Full Transcript</h2>
-          <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-            {chunks.length > 0 ? chunks.map((chunk, i) => (
-              <div key={i} className="flex gap-3">
-                <button
-                  className="text-xs font-mono text-purple-500 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded flex-shrink-0 h-fit transition-colors"
-                  onClick={() => {
-                    if (chunk.startTimeSeconds != null) {
-                      dispatch(setActiveVideo(video.youtubeId))
-                      dispatch(seekTo(chunk.startTimeSeconds))
-                    }
-                  }}
-                >
-                  {formatTime(chunk.startTimeSeconds ?? 0)}
-                </button>
-                <p className="text-sm text-gray-600 leading-relaxed">{chunk.content}</p>
+          <div className="flex items-center justify-between mb-3 gap-3">
+            <h2 className="text-sm font-semibold text-gray-700 flex-shrink-0">Full Transcript</h2>
+            {segments && (
+              <div className="relative flex-1 max-w-xs">
+                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
+                </svg>
+                <input
+                  type="text"
+                  value={transcriptSearch}
+                  onChange={(e) => setTranscriptSearch(e.target.value)}
+                  placeholder="Search transcript..."
+                  className="w-full pl-8 pr-3 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
               </div>
-            )) : (
+            )}
+          </div>
+          <div className="space-y-1 max-h-96 overflow-y-auto pr-1">
+            {filtered ? (
+              filtered.length === 0 ? (
+                <p className="text-sm text-gray-400 py-4 text-center">No results for "{transcriptSearch}"</p>
+              ) : filtered.map((seg, i) => {
+                const parts = q
+                  ? seg.content.split(new RegExp(`(${transcriptSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'))
+                  : null
+                return (
+                  <div key={i} className="flex gap-3 py-1.5 hover:bg-gray-50 rounded-lg px-1 group">
+                    <button
+                      className="text-xs font-mono text-purple-500 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded flex-shrink-0 h-fit transition-colors"
+                      onClick={() => {
+                        dispatch(setActiveVideo(video.youtubeId))
+                        dispatch(seekTo(seg.startSeconds))
+                      }}
+                    >
+                      {formatTime(seg.startSeconds)}
+                    </button>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {parts ? parts.map((part, j) =>
+                        part.toLowerCase() === q
+                          ? <mark key={j} className="bg-yellow-100 text-yellow-900 rounded px-0.5">{part}</mark>
+                          : part
+                      ) : seg.content}
+                    </p>
+                  </div>
+                )
+              })
+            ) : (
               <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{video.transcriptText}</p>
             )}
           </div>
         </section>
-      )}
+        )
+      })()}
     </div>
   )
 }
