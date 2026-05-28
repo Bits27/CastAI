@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Video } from '../store/videosSlice'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
@@ -52,6 +52,17 @@ export default function VideoCard({ video }: Props) {
   const [retrying, setRetrying] = useState(false)
   const [showCollectionPicker, setShowCollectionPicker] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showCollectionPicker) return
+    function handleOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowCollectionPicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [showCollectionPicker])
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
