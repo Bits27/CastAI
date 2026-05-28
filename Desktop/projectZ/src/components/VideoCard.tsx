@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import type { Video } from '../store/videosSlice'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
 import { deleteVideo, ingestVideo, assignVideoCollection } from '../store/videosSlice'
@@ -44,7 +44,6 @@ function formatDuration(seconds: number | null): string {
 
 export default function VideoCard({ video }: Props) {
   const dispatch = useAppDispatch()
-  const navigate = useNavigate()
   const collections = useAppSelector((s) => s.collections.collections)
   const videoCollections = collections.filter((c) => (video.collectionIds ?? []).includes(c.id))
   const [confirming, setConfirming] = useState(false)
@@ -80,9 +79,9 @@ export default function VideoCard({ video }: Props) {
   }
 
   return (
-    <div
-      className="group relative rounded-xl overflow-hidden border border-gray-200 hover:border-purple-300 hover:shadow-md cursor-pointer transition-all flex flex-col bg-white"
-      onClick={() => navigate(`/dashboard/video/${video.id}`)}
+    <Link
+      to={`/dashboard/video/${video.id}`}
+      className="group relative rounded-xl overflow-hidden border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all flex flex-col bg-white"
     >
       {/* Thumbnail */}
       <div className="relative aspect-video bg-gray-100">
@@ -210,6 +209,6 @@ export default function VideoCard({ video }: Props) {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
