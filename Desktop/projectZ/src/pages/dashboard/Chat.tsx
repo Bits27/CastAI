@@ -102,7 +102,7 @@ export default function Chat() {
                           </svg>
                         )}
                       </div>
-                      <span className="truncate flex-1">{video.title ?? video.youtubeId}</span>
+                      <span className="flex-1 leading-snug line-clamp-2">{video.title ?? video.youtubeId}</span>
                     </button>
                   )
                 })}
