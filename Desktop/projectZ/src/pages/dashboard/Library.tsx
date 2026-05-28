@@ -13,7 +13,6 @@ export default function Library() {
   const { activeCollectionId } = useAppSelector((s) => s.collections)
   const [search, setSearch] = useState('')
   const [toasts, setToasts] = useState<string[]>([])
-  const [retitling, setRetitling] = useState(false)
   const prevStatusesRef = useRef<Record<string, string>>({})
 
   useEffect(() => {
@@ -54,17 +53,6 @@ export default function Library() {
     v.title?.toLowerCase().includes(search.toLowerCase()) ||
     v.channel?.toLowerCase().includes(search.toLowerCase())
   )
-
-  async function handleRetitle() {
-    setRetitling(true)
-    try {
-      const token = (window as any).__clerkGetToken?.() ? await (window as any).__clerkGetToken() : ''
-      await fetch('/api/retitle', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
-      await dispatch(fetchVideos())
-    } finally {
-      setRetitling(false)
-    }
-  }
 
   return (
     <div className="flex h-full overflow-hidden relative">
@@ -116,24 +104,9 @@ export default function Library() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Library</h1>
-                  <p className="text-sm text-gray-500 mt-0.5">{videos.length} video{videos.length !== 1 ? 's' : ''} indexed</p>
-                </div>
-                {videos.some((v) => v.status === 'done') && (
-                  <button
-                    onClick={handleRetitle}
-                    disabled={retitling}
-                    className="text-xs text-gray-400 hover:text-purple-600 disabled:opacity-50 flex items-center gap-1 mt-1 transition-colors"
-                    title="Generate clean titles for all videos using AI"
-                  >
-                    <svg className={`w-3.5 h-3.5 ${retitling ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    {retitling ? 'Refreshing...' : 'Refresh titles'}
-                  </button>
-                )}
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Library</h1>
+                <p className="text-sm text-gray-500 mt-0.5">{videos.length} video{videos.length !== 1 ? 's' : ''} indexed</p>
               </div>
               <AddVideoInput />
               <input
