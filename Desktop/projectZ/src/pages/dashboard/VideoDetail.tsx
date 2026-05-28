@@ -67,6 +67,7 @@ export default function VideoDetail() {
   const { videos, status } = useAppSelector((s) => s.videos)
   const video = videos.find((v) => v.id === id)
   const [reextracting, setReextracting] = useState(false)
+  const [reextractError, setReextractError] = useState<string | null>(null)
   const [chunks, setChunks] = useState<TranscriptChunk[]>([])
   const [transcriptSearch, setTranscriptSearch] = useState('')
 
@@ -90,13 +91,21 @@ export default function VideoDetail() {
   async function handleReextract() {
     if (!id) return
     setReextracting(true)
+    setReextractError(null)
     try {
       const token = await getToken()
-      await fetch(`/api/videos/${id}`, {
+      const res = await fetch(`/api/videos/${id}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setReextractError(data.error ?? `Failed (${res.status})`)
+        return
+      }
       await dispatch(fetchVideos())
+    } catch (err) {
+      setReextractError('Network error — please try again')
     } finally {
       setReextracting(false)
     }
@@ -156,15 +165,26 @@ export default function VideoDetail() {
 
       {/* Re-extract insights if missing */}
       {!insights && (
-        <div className="flex items-center justify-between p-4 rounded-xl border border-amber-200 bg-amber-50">
-          <p className="text-sm text-amber-700">Insights were not extracted for this video.</p>
-          <button
-            onClick={handleReextract}
-            disabled={reextracting}
-            className="text-sm font-medium text-amber-700 hover:text-amber-900 disabled:opacity-50"
-          >
-            {reextracting ? 'Extracting...' : 'Extract now'}
-          </button>
+        <div className="flex flex-col gap-2 p-4 rounded-xl border border-amber-200 bg-amber-50">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-amber-700">Insights were not extracted for this video.</p>
+            <button
+              onClick={handleReextract}
+              disabled={reextracting}
+              className="text-sm font-medium text-amber-700 hover:text-amber-900 disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {reextracting && (
+                <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+              )}
+              {reextracting ? 'Extracting...' : 'Extract now'}
+            </button>
+          </div>
+          {reextractError && (
+            <p className="text-xs text-red-600">{reextractError}</p>
+          )}
         </div>
       )}
 
