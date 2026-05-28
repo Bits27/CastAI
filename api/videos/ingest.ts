@@ -205,6 +205,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Extract insights via Claude
     const insightPrompt = `You are an AI assistant. Analyze the following transcript and return ONLY valid JSON with these keys:
+- clean_title: string (4-7 word neutral descriptive title of what this video actually covers, no clickbait, no sensationalism)
 - summary: string (2-3 sentence overview)
 - speakers: string[] (detected speaker names or ["Unknown Speaker"] if none detected)
 - key_claims: { claim: string, timestamp: number }[] (important claims with approximate timestamp in seconds)
@@ -216,7 +217,7 @@ ${transcriptText.slice(0, 50000)}
 
 Return only valid JSON, no markdown.`
 
-    let insights = { summary: '', speakers: [], key_claims: [], top_quotes: [], topics: [] }
+    let insights = { clean_title: '', summary: '', speakers: [], key_claims: [], top_quotes: [], topics: [] }
     try {
       const insightRes = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
@@ -238,8 +239,11 @@ Return only valid JSON, no markdown.`
       topics: insights.topics,
     })
 
-    // Mark done
-    await db.update(schema.videos).set({ status: 'done' }).where(eq(schema.videos.id, video.id))
+    // Overwrite clickbait YouTube title with AI-generated clean title
+    const cleanTitle = insights.clean_title?.trim() || title
+    await db.update(schema.videos)
+      .set({ status: 'done', title: cleanTitle })
+      .where(eq(schema.videos.id, video.id))
 
     // Send digest email (fire-and-forget)
     try {
@@ -248,9 +252,9 @@ Return only valid JSON, no markdown.`
         await resend.emails.send({
           from: 'CastAI <noreply@castai.app>',
           to: user.email,
-          subject: `"${title}" is ready in CastAI`,
+          subject: `"${cleanTitle}" is ready in CastAI`,
           html: `<h2>Your video is ready!</h2>
-<p><strong>${title}</strong> by ${channel} has been transcribed and indexed.</p>
+<p><strong>${cleanTitle}</strong> by ${channel} has been transcribed and indexed.</p>
 <p><strong>Summary:</strong> ${insights.summary}</p>
 <p><strong>Topics:</strong> ${Array.isArray(insights.topics) ? insights.topics.join(', ') : ''}</p>
 <p><a href="https://castai.app/dashboard/video/${video.id}">View in CastAI →</a></p>`,

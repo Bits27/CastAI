@@ -58,6 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!video.transcriptText) return res.status(422).json({ error: 'No transcript available' })
 
     const insightPrompt = `You are an AI assistant. Analyze the following transcript and return ONLY valid JSON with these keys:
+- clean_title: string (4-7 word neutral descriptive title of what this video actually covers, no clickbait, no sensationalism)
 - summary: string (2-3 sentence overview)
 - speakers: string[] (detected speaker names or ["Unknown Speaker"] if none detected)
 - key_claims: { claim: string, timestamp: number }[] (important claims with approximate timestamp in seconds)
@@ -69,7 +70,7 @@ ${video.transcriptText.slice(0, 50000)}
 
 Return only valid JSON, no markdown.`
 
-    let insights = { summary: '', speakers: [], key_claims: [], top_quotes: [], topics: [] }
+    let insights = { clean_title: '', summary: '', speakers: [], key_claims: [], top_quotes: [], topics: [] }
     try {
       const res2 = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
@@ -91,6 +92,13 @@ Return only valid JSON, no markdown.`
       topQuotes: insights.top_quotes,
       topics: insights.topics,
     })
+
+    const cleanTitle = insights.clean_title?.trim()
+    if (cleanTitle) {
+      await db.update(schema.videos)
+        .set({ title: cleanTitle })
+        .where(eq(schema.videos.id, id))
+    }
 
     return res.status(200).json({ ok: true })
   }
