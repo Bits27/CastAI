@@ -9,7 +9,7 @@ import CollectionsPanel from '../../components/CollectionsPanel'
 export default function Chat() {
   const dispatch = useAppDispatch()
   const { messages, streaming, error } = useAppSelector((s) => s.chat)
-  const { videos, selectedVideoIds } = useAppSelector((s) => s.videos)
+  const { videos, selectedVideoIds, status: videosStatus } = useAppSelector((s) => s.videos)
   const { activeCollectionId } = useAppSelector((s) => s.collections)
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -77,7 +77,15 @@ export default function Chat() {
                 )}
               </div>
             </div>
-            {doneVideos.length === 0 ? (
+            {doneVideos.length === 0 && (videosStatus === 'loading' || videosStatus === 'idle') ? (
+              <p className="text-xs text-gray-400 flex items-center gap-1">
+                <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Loading videos...
+              </p>
+            ) : doneVideos.length === 0 ? (
               <p className="text-xs text-gray-400">No indexed videos yet. Add some in Library.</p>
             ) : (
               <div className="space-y-1">
@@ -141,6 +149,15 @@ export default function Chat() {
               <p className="text-sm text-gray-400 mt-1">
                 I'll search across your library and cite exact timestamps.
               </p>
+              {(videosStatus === 'loading' || videosStatus === 'idle') && doneVideos.length === 0 && (
+                <p className="text-sm text-gray-400 mt-4 flex items-center gap-1.5">
+                  <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Loading your videos...
+                </p>
+              )}
               {doneVideos.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-6 justify-center max-w-md">
                   {[
