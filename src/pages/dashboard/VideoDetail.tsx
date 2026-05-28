@@ -28,9 +28,14 @@ export default function VideoDetail() {
   const { id } = useParams<{ id: string }>()
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  const video = useAppSelector((s) => s.videos.videos.find((v) => v.id === id))
+  const { videos, status } = useAppSelector((s) => s.videos)
+  const video = videos.find((v) => v.id === id)
   const [reextracting, setReextracting] = useState(false)
   const [chunks, setChunks] = useState<TranscriptChunk[]>([])
+
+  useEffect(() => {
+    if (videos.length === 0) dispatch(fetchVideos())
+  }, [])
 
   useEffect(() => {
     if (video) dispatch(setActiveVideo(video.youtubeId))
@@ -61,9 +66,23 @@ export default function VideoDetail() {
   }
 
   if (!video) {
+    if (status === 'loading' || videos.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-full text-gray-400 gap-2">
+          <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          Loading...
+        </div>
+      )
+    }
     return (
-      <div className="flex items-center justify-center h-full text-gray-400">
-        Video not found
+      <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
+        <p>Video not found</p>
+        <button onClick={() => navigate(-1)} className="text-sm text-purple-600 hover:text-purple-800">
+          ← Go back
+        </button>
       </div>
     )
   }
