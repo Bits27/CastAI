@@ -124,7 +124,11 @@ export default function VideoDetail() {
     )
   }
 
-  const insights = (video as any).insights
+  const rawInsights = (video as any).insights
+  // Treat empty insights (failed extraction) the same as missing insights
+  const insights = rawInsights?.summary || rawInsights?.topics?.length || rawInsights?.speakers?.length
+    ? rawInsights
+    : null
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
