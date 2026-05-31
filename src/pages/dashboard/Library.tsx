@@ -56,8 +56,8 @@ export default function Library() {
 
   return (
     <div className="flex h-full overflow-hidden relative">
-      {/* Collections sidebar */}
-      <aside className="w-52 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col">
+      {/* Desktop collections sidebar */}
+      <aside className="hidden md:flex w-52 flex-shrink-0 border-r border-gray-200 bg-white flex-col">
         <div className="p-4 border-b border-gray-100">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Collections</h2>
         </div>
@@ -68,7 +68,26 @@ export default function Library() {
 
       {/* Main content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="flex flex-col gap-6 p-6 max-w-5xl mx-auto w-full">
+        {/* Mobile collection chips */}
+        <div className="md:hidden flex gap-2 overflow-x-auto no-scrollbar px-4 pt-4 pb-2 border-b border-gray-100 bg-white">
+          <button
+            onClick={() => dispatch(setActiveCollection(null))}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${!activeCollectionId ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}
+          >
+            All videos
+          </button>
+          {collections.map((col) => (
+            <button
+              key={col.id}
+              onClick={() => dispatch(setActiveCollection(activeCollectionId === col.id ? null : col.id))}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${activeCollectionId === col.id ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}
+            >
+              {col.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 max-w-5xl mx-auto w-full">
 
           {/* Header */}
           {activeCollection ? (

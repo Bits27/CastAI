@@ -12,8 +12,8 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Sidebar nav */}
-      <nav className="w-56 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col">
+      {/* Desktop sidebar nav */}
+      <nav className="hidden md:flex w-56 flex-shrink-0 bg-white border-r border-gray-200 flex-col">
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-xs">C</div>
@@ -49,9 +49,31 @@ export default function Dashboard() {
       </nav>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pb-16 md:pb-0">
         <Outlet />
       </main>
+
+      {/* Mobile bottom tab bar */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-200 flex items-stretch safe-area-pb">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={() =>
+              `flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium transition-colors ${
+                item.active ? 'text-purple-600' : 'text-gray-400'
+              }`
+            }
+          >
+            <span className="text-xl leading-none">{item.icon}</span>
+            {item.label}
+          </NavLink>
+        ))}
+        <div className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2">
+          <UserButton afterSignOutUrl="/" />
+          <span className="text-[10px] text-gray-400">Account</span>
+        </div>
+      </nav>
     </div>
   )
 }
