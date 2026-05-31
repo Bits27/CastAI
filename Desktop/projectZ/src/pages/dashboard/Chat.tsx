@@ -12,6 +12,7 @@ export default function Chat() {
   const { videos, selectedVideoIds, status: videosStatus } = useAppSelector((s) => s.videos)
   const { activeCollectionId } = useAppSelector((s) => s.collections)
   const [input, setInput] = useState('')
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -42,8 +43,8 @@ export default function Chat() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Left sidebar */}
-      <aside className="w-72 flex-shrink-0 border-r border-gray-200 flex flex-col bg-gray-50">
+      {/* Desktop left sidebar */}
+      <aside className="hidden md:flex w-72 flex-shrink-0 border-r border-gray-200 flex-col bg-gray-50">
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Collection filter */}
           <div>
@@ -122,7 +123,7 @@ export default function Chat() {
 
       {/* Chat main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-gray-200 bg-white">
           <div>
             <h1 className="text-lg font-semibold text-gray-900">Chat</h1>
             <p className="text-xs text-gray-500">
@@ -131,17 +132,70 @@ export default function Chat() {
                 : `${selectedVideoIds.length} of ${doneVideos.length} videos`}
             </p>
           </div>
-          {messages.length > 0 && (
+          <div className="flex items-center gap-3">
+            {/* Mobile filter toggle */}
             <button
-              onClick={() => dispatch(clearChat())}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              onClick={() => setShowMobileFilters((v) => !v)}
+              className="md:hidden flex items-center gap-1.5 text-xs text-gray-500 hover:text-purple-600 border border-gray-200 rounded-lg px-2.5 py-1.5 transition-colors"
             >
-              Clear chat
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 12h10M11 20h2" />
+              </svg>
+              Filters
             </button>
-          )}
+            {messages.length > 0 && (
+              <button
+                onClick={() => dispatch(clearChat())}
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        {/* Mobile filters panel */}
+        {showMobileFilters && (
+          <div className="md:hidden border-b border-gray-200 bg-gray-50 p-4 space-y-4 overflow-y-auto max-h-64">
+            <div>
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Collection</h2>
+              <CollectionsPanel />
+            </div>
+            <div>
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Videos</h2>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-gray-400">{selectedVideoIds.length === 0 ? 'All videos' : `${selectedVideoIds.length} selected`}</p>
+                <div className="flex gap-2">
+                  {selectedVideoIds.length < doneVideos.length && doneVideos.length > 0 && (
+                    <button onClick={() => dispatch(setSelectedVideoIds(doneVideos.map((v) => v.id)))} className="text-xs text-purple-600">All</button>
+                  )}
+                  {selectedVideoIds.length > 0 && (
+                    <button onClick={() => dispatch(setSelectedVideoIds([]))} className="text-xs text-gray-400">Clear</button>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1">
+                {doneVideos.map((video) => {
+                  const isSelected = selectedVideoIds.includes(video.id)
+                  return (
+                    <button
+                      key={video.id}
+                      onClick={() => dispatch(toggleVideoSelected(video.id))}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition-colors border ${isSelected ? 'bg-purple-50 border-purple-300 text-purple-800' : 'border-transparent hover:bg-gray-100 text-gray-600'}`}
+                    >
+                      <div className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center ${isSelected ? 'bg-purple-600 border-purple-600' : 'border-gray-300 bg-white'}`}>
+                        {isSelected && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                      </div>
+                      <span className="truncate flex-1">{video.title ?? video.youtubeId}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="text-4xl mb-4">💬</div>
@@ -189,7 +243,7 @@ export default function Chat() {
           )}
         </div>
 
-        <form onSubmit={handleSend} className="px-6 py-4 border-t border-gray-200 bg-white">
+        <form onSubmit={handleSend} className="px-4 md:px-6 py-3 md:py-4 border-t border-gray-200 bg-white">
           <div className="flex gap-3 items-center">
             <input
               type="text"

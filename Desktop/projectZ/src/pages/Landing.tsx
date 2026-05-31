@@ -53,13 +53,13 @@ export default function Landing() {
       </nav>
 
       {/* Hero */}
-      <section className="flex flex-col items-center text-center px-6 pt-24 pb-32 max-w-4xl mx-auto">
+      <section className="flex flex-col items-center text-center px-6 pt-16 md:pt-24 pb-20 md:pb-32 max-w-4xl mx-auto">
         <div className="fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-purple-300 text-xs font-medium mb-8 tracking-wide backdrop-blur-sm">
           <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-sm shadow-purple-400" />
           Groq · Gemini Embeddings · Neon pgvector
         </div>
 
-        <h1 className="fade-up-delay text-5xl sm:text-7xl font-extrabold tracking-tight mb-6 leading-[1.05]">
+        <h1 className="fade-up-delay text-4xl sm:text-7xl font-extrabold tracking-tight mb-6 leading-[1.05]">
           <span className="bg-gradient-to-br from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
             Chat with your
           </span>
