@@ -70,14 +70,22 @@ export default function VideoDetail() {
   const [reextractError, setReextractError] = useState<string | null>(null)
   const [chunks, setChunks] = useState<TranscriptChunk[]>([])
   const [transcriptSearch, setTranscriptSearch] = useState('')
+  const [playerActive, setPlayerActive] = useState(false)
 
   useEffect(() => {
     if (videos.length === 0) dispatch(fetchVideos())
   }, [])
 
+  // Reset player when navigating to a different video
   useEffect(() => {
-    if (video) dispatch(setActiveVideo(video.youtubeId))
-  }, [video?.youtubeId])
+    setPlayerActive(false)
+  }, [id])
+
+  function activatePlayer(seekSeconds?: number) {
+    dispatch(setActiveVideo(video!.youtubeId))
+    setPlayerActive(true)
+    if (seekSeconds != null) dispatch(seekTo(seekSeconds))
+  }
 
   useEffect(() => {
     if (!id) return
@@ -159,8 +167,28 @@ export default function VideoDetail() {
       </div>
 
       {/* Player */}
-      <div className="aspect-video rounded-xl overflow-hidden bg-black">
-        <YouTubePlayer />
+      <div className="aspect-video rounded-xl overflow-hidden bg-black relative">
+        {playerActive ? (
+          <YouTubePlayer />
+        ) : (
+          <button
+            onClick={() => activatePlayer()}
+            className="absolute inset-0 w-full h-full group"
+          >
+            {video.thumbnailUrl ? (
+              <img src={video.thumbnailUrl} alt={video.title ?? ''} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gray-900" />
+            )}
+            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-white/90 group-hover:bg-white flex items-center justify-center shadow-xl transition-all group-hover:scale-105">
+                <svg className="w-7 h-7 text-gray-900 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
+          </button>
+        )}
       </div>
 
       {/* Re-extract insights if missing */}
@@ -299,10 +327,7 @@ export default function VideoDetail() {
                   <div key={i} className="flex gap-3 py-1.5 hover:bg-gray-50 rounded-lg px-1 group">
                     <button
                       className="text-xs font-mono text-purple-500 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded flex-shrink-0 h-fit transition-colors"
-                      onClick={() => {
-                        dispatch(setActiveVideo(video.youtubeId))
-                        dispatch(seekTo(seg.startSeconds))
-                      }}
+                      onClick={() => activatePlayer(seg.startSeconds)}
                     >
                       {formatTime(seg.startSeconds)}
                     </button>
