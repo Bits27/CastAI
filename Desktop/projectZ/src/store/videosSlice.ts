@@ -12,7 +12,7 @@ export interface VideoInsights {
 export interface Video {
   id: string
   userId: string
-  collectionId: string | null
+  collectionId: string | null  // legacy, use collectionIds
   collectionIds: string[]
   youtubeId: string
   title: string | null
