@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { requireAuth } from '../_lib/auth.js'
 import { db, schema } from '../_lib/db.js'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, inArray } from 'drizzle-orm'
 import Groq from 'groq-sdk'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
@@ -17,6 +17,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query as { id: string }
 
   if (req.method === 'GET') {
+    const [video] = await db.select({ id: schema.videos.id })
+      .from(schema.videos)
+      .where(and(eq(schema.videos.id, id), eq(schema.videos.userId, userId)))
+    if (!video) return res.status(404).json({ error: 'Not found' })
+
     const chunks = await db
       .select({
         content: schema.chunks.content,
@@ -48,11 +53,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .where(and(eq(schema.videos.id, id), eq(schema.videos.userId, userId)))
     if (!video) return res.status(404).json({ error: 'Not found' })
 
+    // Only attach collections the caller actually owns
+    let ownedCollectionIds: string[] = []
+    if (collectionIds.length > 0) {
+      const owned = await db.select({ id: schema.collections.id })
+        .from(schema.collections)
+        .where(and(inArray(schema.collections.id, collectionIds), eq(schema.collections.userId, userId)))
+      ownedCollectionIds = owned.map((c) => c.id)
+    }
+
     // Replace junction table rows for this video
     await db.delete(schema.videoCollections).where(eq(schema.videoCollections.videoId, id))
-    if (collectionIds.length > 0) {
+    if (ownedCollectionIds.length > 0) {
       await db.insert(schema.videoCollections).values(
-        collectionIds.map((cid) => ({ videoId: id, collectionId: cid }))
+        ownedCollectionIds.map((cid) => ({ videoId: id, collectionId: cid }))
       )
     }
 

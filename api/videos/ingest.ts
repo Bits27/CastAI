@@ -37,6 +37,15 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
 const resend = new Resend(process.env.RESEND_API_KEY)
 const youtube = google.youtube({ version: 'v3', auth: process.env.YOUTUBE_API_KEY })
 
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function extractYoutubeId(url: string): string {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
@@ -252,14 +261,18 @@ Return only valid JSON, no markdown.`
     try {
       const [user] = await db.select().from(schema.users).where(eq(schema.users.id, userId))
       if (user?.email) {
+        const safeTitle = escapeHtml(cleanTitle)
+        const safeChannel = escapeHtml(channel)
+        const safeSummary = escapeHtml(insights.summary ?? '')
+        const safeTopics = Array.isArray(insights.topics) ? insights.topics.map(escapeHtml).join(', ') : ''
         await resend.emails.send({
           from: 'CastAI <noreply@castai.app>',
           to: user.email,
-          subject: `"${cleanTitle}" is ready in CastAI`,
+          subject: `"${safeTitle}" is ready in CastAI`,
           html: `<h2>Your video is ready!</h2>
-<p><strong>${cleanTitle}</strong> by ${channel} has been transcribed and indexed.</p>
-<p><strong>Summary:</strong> ${insights.summary}</p>
-<p><strong>Topics:</strong> ${Array.isArray(insights.topics) ? insights.topics.join(', ') : ''}</p>
+<p><strong>${safeTitle}</strong> by ${safeChannel} has been transcribed and indexed.</p>
+<p><strong>Summary:</strong> ${safeSummary}</p>
+<p><strong>Topics:</strong> ${safeTopics}</p>
 <p><a href="https://castai.app/dashboard/video/${video.id}">View in CastAI →</a></p>`,
         })
       }
@@ -281,6 +294,6 @@ Return only valid JSON, no markdown.`
   } catch (err) {
     console.error('Ingest error:', err)
     await db.update(schema.videos).set({ status: 'failed' }).where(eq(schema.videos.id, video.id))
-    return res.status(500).json({ error: 'Processing failed', details: String(err) })
+    return res.status(500).json({ error: 'Processing failed' })
   }
 }

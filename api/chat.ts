@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { requireAuth } from './_lib/auth.js'
 import { db, schema, neonSql } from './_lib/db.js'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import Groq from 'groq-sdk'
 
@@ -35,23 +35,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!query) return res.status(400).json({ error: 'query is required' })
 
-  // Resolve collection -> video IDs via junction table
-  let resolvedVideoIds = [...videoIds]
+  // All videos the caller actually owns — every requested id is checked against this set
+  const ownedVideoIds = new Set(
+    (
+      await db.select({ id: schema.videos.id }).from(schema.videos).where(eq(schema.videos.userId, userId))
+    ).map((v) => v.id)
+  )
+
+  let resolvedVideoIds = videoIds.filter((vid) => ownedVideoIds.has(vid))
+
+  // Resolve collection -> video IDs via junction table (only if the collection belongs to the caller)
   if (collectionId) {
-    const collVideos = await db
-      .select({ videoId: schema.videoCollections.videoId })
-      .from(schema.videoCollections)
-      .where(eq(schema.videoCollections.collectionId, collectionId))
-    resolvedVideoIds = [...new Set([...resolvedVideoIds, ...collVideos.map((v) => v.videoId)])]
+    const [collection] = await db
+      .select({ id: schema.collections.id })
+      .from(schema.collections)
+      .where(and(eq(schema.collections.id, collectionId), eq(schema.collections.userId, userId)))
+    if (collection) {
+      const collVideos = await db
+        .select({ videoId: schema.videoCollections.videoId })
+        .from(schema.videoCollections)
+        .where(eq(schema.videoCollections.collectionId, collectionId))
+      resolvedVideoIds = [...new Set([...resolvedVideoIds, ...collVideos.map((v) => v.videoId).filter((vid) => ownedVideoIds.has(vid))])]
+    }
   }
 
   if (resolvedVideoIds.length === 0) {
-    // Use all user videos
-    const allVideos = await db
-      .select({ id: schema.videos.id })
-      .from(schema.videos)
-      .where(eq(schema.videos.userId, userId))
-    resolvedVideoIds = allVideos.map((v) => v.id)
+    // No (valid) videos/collection specified — fall back to all of the user's videos
+    resolvedVideoIds = [...ownedVideoIds]
   }
 
   if (resolvedVideoIds.length === 0) {
