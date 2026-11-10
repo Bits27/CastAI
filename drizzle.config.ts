@@ -1,7 +1,7 @@
 import { defineConfig } from 'drizzle-kit'
 import { loadEnvFile } from 'node:process'
 
-try { loadEnvFile('.env.local') } catch {}
+try { loadEnvFile('.env.local') } catch { /* .env.local is optional — fall back to process env */ }
 
 export default defineConfig({
   schema: './src/db/schema.ts',

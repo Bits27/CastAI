@@ -100,7 +100,14 @@ ${video.transcriptText.slice(0, 50000)}
 
 Return only valid JSON, no markdown.`
 
-    let insights = { clean_title: '', summary: '', speakers: [], key_claims: [], top_quotes: [], topics: [] }
+    let insights: {
+      clean_title?: string
+      summary: string
+      speakers: string[]
+      key_claims: { claim: string; timestamp: number }[]
+      top_quotes: string[]
+      topics: string[]
+    }
     try {
       const res2 = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',

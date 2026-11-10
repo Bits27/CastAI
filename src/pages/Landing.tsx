@@ -32,7 +32,7 @@ export default function Landing() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-5 max-w-6xl mx-auto border-b border-white/5">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-purple-900/50">C</div>
+          <img src="/logo.png" alt="CastAI logo" className="w-8 h-8 rounded-lg shadow-lg shadow-purple-900/50" />
           <span className="font-bold text-lg tracking-tight">CastAI</span>
         </div>
         <SignedOut>

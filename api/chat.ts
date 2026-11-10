@@ -3,7 +3,11 @@ import { requireAuth } from './_lib/auth.js'
 import { db, schema, neonSql } from './_lib/db.js'
 import { and, eq } from 'drizzle-orm'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import type { EmbedContentRequest } from '@google/generative-ai'
 import Groq from 'groq-sdk'
+
+// outputDimensionality is supported by the API but missing from the SDK's types
+type EmbedRequest = EmbedContentRequest & { outputDimensionality: number }
 
 const genai = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
@@ -70,10 +74,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Embed query
   const embModel = genai.getGenerativeModel({ model: 'gemini-embedding-001' })
-  const embRes = await embModel.embedContent({
+  const embReq: EmbedRequest = {
     content: { parts: [{ text: query }], role: 'user' },
     outputDimensionality: 768,
-  } as any)
+  }
+  const embRes = await embModel.embedContent(embReq)
   const queryEmbedding = embRes.embedding.values
 
   // Vector search — fetch more chunks to ensure coverage across multiple videos
@@ -86,7 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   ` as ChunkResult[]
 
   // Fetch video titles + insights for all resolved videos
-  const videoInfoMap: Record<string, { title: string; insights: any }> = {}
+  const videoInfoMap: Record<string, { title: string; insights: typeof schema.videoInsights.$inferSelect | null }> = {}
   await Promise.all(resolvedVideoIds.map(async (vid) => {
     const [video] = await db
       .select({ title: schema.videos.title })
@@ -105,9 +110,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const info = videoInfoMap[vid]
       if (!info) return null
       const parts = [`Video: "${info.title}"`]
-      if (info.insights?.speakers?.length) parts.push(`Speakers: ${(info.insights.speakers as string[]).join(', ')}`)
-      if (info.insights?.summary) parts.push(`Summary: ${(info.insights.summary as string).slice(0, 300)}`)
-      if (info.insights?.topics?.length) parts.push(`Topics: ${(info.insights.topics as string[]).join(', ')}`)
+      const speakers = info.insights?.speakers as string[] | null | undefined
+      const topics = info.insights?.topics as string[] | null | undefined
+      if (speakers?.length) parts.push(`Speakers: ${speakers.join(', ')}`)
+      if (info.insights?.summary) parts.push(`Summary: ${info.insights.summary.slice(0, 300)}`)
+      if (topics?.length) parts.push(`Topics: ${topics.join(', ')}`)
       if (!info.insights) parts.push(`(No insights extracted yet — refer to transcript chunks only)`)
       return parts.join('\n')
     })

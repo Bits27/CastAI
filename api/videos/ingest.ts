@@ -5,7 +5,11 @@ import { eq } from 'drizzle-orm'
 import { google } from 'googleapis'
 import { Resend } from 'resend'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import type { EmbedContentRequest } from '@google/generative-ai'
 import Groq from 'groq-sdk'
+
+// outputDimensionality is supported by the API but missing from the SDK's types
+type EmbedRequest = EmbedContentRequest & { outputDimensionality: number }
 
 async function fetchYouTubeTranscript(videoId: string): Promise<{ text: string; offset: number; duration: number }[]> {
   const apiKey = process.env.SUPADATA_API_KEY
@@ -104,12 +108,13 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
   for (let i = 0; i < texts.length; i += BATCH_SIZE) {
     const batch = texts.slice(i, i + BATCH_SIZE)
     const results = await Promise.all(
-      batch.map(text =>
-        model.embedContent({
+      batch.map(text => {
+        const req: EmbedRequest = {
           content: { parts: [{ text }], role: 'user' },
           outputDimensionality: 768,
-        } as any)
-      )
+        }
+        return model.embedContent(req)
+      })
     )
     embeddings.push(...results.map(r => r.embedding.values ?? []))
   }

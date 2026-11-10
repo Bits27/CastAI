@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
+import { getClerkToken } from '../lib/clerkToken'
 
 export interface Citation {
   chunkId: string
@@ -104,13 +105,6 @@ export const sendMessage = createAsyncThunk(
     dispatch(chatSlice.actions.finalizeMessage({ id: assistantMsgId, citations }))
   }
 )
-
-async function getClerkToken(): Promise<string> {
-  if (typeof window !== 'undefined' && (window as any).__clerkGetToken) {
-    return (window as any).__clerkGetToken()
-  }
-  return ''
-}
 
 const chatSlice = createSlice({
   name: 'chat',

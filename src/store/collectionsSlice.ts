@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
+import { getClerkToken } from '../lib/clerkToken'
 
 export interface Collection {
   id: string
@@ -18,13 +19,6 @@ const initialState: CollectionsState = {
   collections: [],
   activeCollectionId: null,
   status: 'idle',
-}
-
-async function getClerkToken(): Promise<string> {
-  if (typeof window !== 'undefined' && (window as any).__clerkGetToken) {
-    return (window as any).__clerkGetToken()
-  }
-  return ''
 }
 
 export const fetchCollections = createAsyncThunk('collections/fetchAll', async () => {

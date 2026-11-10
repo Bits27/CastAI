@@ -8,13 +8,14 @@ import Library from './pages/dashboard/Library'
 import Chat from './pages/dashboard/Chat'
 import VideoDetail from './pages/dashboard/VideoDetail'
 import { useEffect } from 'react'
+import './lib/clerkToken'
 
 const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
 function ClerkTokenBridge() {
   const { getToken } = useAuth()
   useEffect(() => {
-    ;(window as any).__clerkGetToken = () => getToken()
+    window.__clerkGetToken = () => getToken()
   }, [getToken])
   return null
 }

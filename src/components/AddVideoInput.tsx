@@ -22,8 +22,8 @@ export default function AddVideoInput({ onSuccess, placeholder }: Props) {
       const video = await dispatch(ingestVideo(url.trim())).unwrap()
       setUrl('')
       onSuccess?.(video.id)
-    } catch (err: any) {
-      setError(err?.message ?? 'Failed to add video')
+    } catch (err) {
+      setError((err as { message?: string })?.message ?? 'Failed to add video')
     } finally {
       setLoading(false)
     }

@@ -42,6 +42,26 @@ export default function YouTubePlayer() {
   useEffect(() => { activeVideoIdRef.current = activeVideoId }, [activeVideoId])
 
   useEffect(() => {
+    function initPlayer() {
+      if (!containerRef.current) return
+      playerRef.current = new window.YT.Player(containerRef.current, {
+        width: '100%',
+        height: '100%',
+        videoId: activeVideoIdRef.current || '',
+        playerVars: { autoplay: 0, rel: 0, modestbranding: 1 },
+        events: {
+          onReady: () => {
+            if (activeVideoIdRef.current) {
+              playerRef.current?.loadVideoById(activeVideoIdRef.current)
+            }
+          },
+          onStateChange: (event) => {
+            dispatch(setPlaying(event.data === 1))
+          },
+        },
+      })
+    }
+
     if (typeof window.YT === 'undefined') {
       const script = document.createElement('script')
       script.src = 'https://www.youtube.com/iframe_api'
@@ -55,27 +75,7 @@ export default function YouTubePlayer() {
       playerRef.current?.destroy()
       playerRef.current = null
     }
-  }, [])
-
-  function initPlayer() {
-    if (!containerRef.current) return
-    playerRef.current = new window.YT.Player(containerRef.current, {
-      width: '100%',
-      height: '100%',
-      videoId: activeVideoIdRef.current || '',
-      playerVars: { autoplay: 0, rel: 0, modestbranding: 1 },
-      events: {
-        onReady: () => {
-          if (activeVideoIdRef.current) {
-            playerRef.current?.loadVideoById(activeVideoIdRef.current)
-          }
-        },
-        onStateChange: (event) => {
-          dispatch(setPlaying(event.data === 1))
-        },
-      },
-    })
-  }
+  }, [dispatch])
 
   useEffect(() => {
     if (!activeVideoId || !playerRef.current) return

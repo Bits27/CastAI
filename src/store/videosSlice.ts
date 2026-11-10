@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
+import { getClerkToken } from '../lib/clerkToken'
 
 export interface VideoInsights {
   summary: string
@@ -83,14 +84,6 @@ export const assignVideoCollection = createAsyncThunk(
     return res.json() as Promise<{ id: string; collectionIds: string[] }>
   }
 )
-
-async function getClerkToken(): Promise<string> {
-  // Clerk exposes the session token via a global helper set up in ClerkProvider
-  if (typeof window !== 'undefined' && (window as any).__clerkGetToken) {
-    return (window as any).__clerkGetToken()
-  }
-  return ''
-}
 
 const videosSlice = createSlice({
   name: 'videos',

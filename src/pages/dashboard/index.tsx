@@ -16,7 +16,7 @@ export default function Dashboard() {
       <nav className="hidden md:flex w-56 flex-shrink-0 bg-white border-r border-gray-200 flex-col">
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-xs">C</div>
+            <img src="/logo.png" alt="CastAI logo" className="w-7 h-7 rounded-lg" />
             <span className="font-semibold text-gray-800">CastAI</span>
           </div>
         </div>

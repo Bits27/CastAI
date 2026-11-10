@@ -4,6 +4,7 @@ import { useAppSelector, useAppDispatch } from '../../store/hooks'
 import { setActiveVideo, seekTo } from '../../store/playerSlice'
 import { fetchVideos } from '../../store/videosSlice'
 import YouTubePlayer from '../../components/YouTubePlayer'
+import { getClerkToken } from '../../lib/clerkToken'
 
 interface TranscriptChunk {
   content: string
@@ -53,13 +54,6 @@ function splitInto15Sec(chunks: TranscriptChunk[]): DisplaySegment[] {
   return segments
 }
 
-async function getToken(): Promise<string> {
-  if (typeof window !== 'undefined' && (window as any).__clerkGetToken) {
-    return (window as any).__clerkGetToken()
-  }
-  return ''
-}
-
 export default function VideoDetail() {
   const { id } = useParams<{ id: string }>()
   const dispatch = useAppDispatch()
@@ -72,14 +66,19 @@ export default function VideoDetail() {
   const [transcriptSearch, setTranscriptSearch] = useState('')
   const [playerActive, setPlayerActive] = useState(false)
 
+  const hasVideos = videos.length > 0
   useEffect(() => {
-    if (videos.length === 0) dispatch(fetchVideos())
-  }, [])
+    if (!hasVideos) dispatch(fetchVideos())
+    // Only fetch on mount — re-running when videos load would be redundant
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch])
 
-  // Reset player when navigating to a different video
-  useEffect(() => {
+  // Reset player when navigating to a different video (adjusting state during render, per React docs)
+  const [playerVideoId, setPlayerVideoId] = useState(id)
+  if (playerVideoId !== id) {
+    setPlayerVideoId(id)
     setPlayerActive(false)
-  }, [id])
+  }
 
   function activatePlayer(seekSeconds?: number) {
     dispatch(setActiveVideo(video!.youtubeId))
@@ -89,7 +88,7 @@ export default function VideoDetail() {
 
   useEffect(() => {
     if (!id) return
-    getToken().then((token) =>
+    getClerkToken().then((token) =>
       fetch(`/api/videos/${id}`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json())
         .then((data) => Array.isArray(data) && setChunks(data))
@@ -101,7 +100,7 @@ export default function VideoDetail() {
     setReextracting(true)
     setReextractError(null)
     try {
-      const token = await getToken()
+      const token = await getClerkToken()
       const res = await fetch(`/api/videos/${id}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -112,7 +111,7 @@ export default function VideoDetail() {
         return
       }
       await dispatch(fetchVideos())
-    } catch (err) {
+    } catch {
       setReextractError('Network error — please try again')
     } finally {
       setReextracting(false)
@@ -141,7 +140,7 @@ export default function VideoDetail() {
     )
   }
 
-  const rawInsights = (video as any).insights
+  const rawInsights = video.insights
   // Treat empty insights (failed extraction) the same as missing insights
   const insights = rawInsights?.summary || rawInsights?.topics?.length || rawInsights?.speakers?.length
     ? rawInsights
